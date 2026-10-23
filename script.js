@@ -33,13 +33,19 @@ const roster = [
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('active');
+        b.removeAttribute('aria-current');
+    });
 
     const activePage = document.getElementById(`page-${tabId}`);
     if (activePage) activePage.classList.add('active');
 
     const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
-    if (targetBtn) targetBtn.classList.add('active');
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.setAttribute('aria-current', 'page');
+    }
 }
 
 function renderStandings(filter = 'ALL') {
@@ -51,32 +57,88 @@ function renderStandings(filter = 'ALL') {
 
     filtered.forEach((p, idx) => {
         const tr = document.createElement('tr');
-        const heartsVisual = '❤️'.repeat(p.hearts) + '🖤'.repeat(3 - p.hearts);
+        const heartsVisual = [0, 1, 2].map(i => `
+            <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
+        `).join('');
         
         let stateClass = p.state.toLowerCase();
 
         tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td><strong>${p.name}</strong></td>
-            <td><span class="badge-mini ${stateClass}">${p.state}</span></td>
-            <td><strong>${p.points} PTS</strong></td>
-            <td>${heartsVisual} (${p.hearts}/3)</td>
-            <td>${getThreatStatus(p.state, p.hearts)}</td>
+            <td class="cell-rank">${idx + 1}</td>
+            <td class="cell-player"><strong>${p.name}</strong></td>
+            <td class="cell-state"><span class="badge-mini ${stateClass}">${p.state}</span></td>
+            <td class="cell-points"><strong>${p.points}</strong> <span class="unit">PTS</span></td>
+            <td class="cell-hearts"><span class="hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${heartsVisual}</span> <span class="heart-count">(${p.hearts}/3)</span></td>
+            <td class="cell-threat"><span class="threat-box ${stateClass}">${getThreatStatus(p.state, p.hearts)}</span></td>
         `;
         tableBody.appendChild(tr);
     });
+
+    renderSurvivorCards(filtered, filter);
+}
+
+function renderSurvivorCards(players, filter) {
+    const grid = document.getElementById('survivorCards');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    players.forEach((p, idx) => {
+        const stateClass = p.state.toLowerCase();
+        const initials = p.name.split(/\s+/).map(part => part.charAt(0)).slice(0, 2).join('').toUpperCase();
+        const hearts = [0, 1, 2].map(i => `
+            <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
+        `).join('');
+
+        const card = document.createElement('article');
+        card.className = `survivor-card ${stateClass}`;
+        card.innerHTML = `
+            <div class="survivor-top">
+                <span class="survivor-rank">#${String(idx + 1).padStart(2, '0')}</span>
+                <span class="survivor-state">${p.state}</span>
+            </div>
+            <div class="survivor-identity">
+                <span class="survivor-avatar" aria-hidden="true">${initials}</span>
+                <div class="survivor-id">
+                    <h4 class="survivor-name">${p.name}</h4>
+                    <span class="survivor-points"><strong>${p.points}</strong> PTS</span>
+                </div>
+            </div>
+            <div class="survivor-vitals">
+                <span class="survivor-hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${hearts}</span>
+                <span class="survivor-heart-count">${p.hearts}/3</span>
+            </div>
+            <div class="survivor-threat">${getThreatStatus(p.state, p.hearts)}</div>
+        `;
+        grid.appendChild(card);
+    });
+
+    const count = document.getElementById('survivorDossierCount');
+    if (count) {
+        count.textContent = filter === 'ALL'
+            ? `${players.length} SURVIVORS DISPLAYED`
+            : `${players.length} OF ${roster.length} ${filter} SURVIVORS`;
+    }
 }
 
 function getThreatStatus(state, hearts) {
-    if (state === 'SAFE') return '🟢 Safe Zone';
-    if (state === 'NORMAL') return '🔵 Neutral Zone';
-    if (state === 'DANGER' && hearts > 1) return '🟠 Critical Danger';
-    return '🔴 Extreme Risk (1 Heart Left)';
+    let label = 'Extreme Risk (1 Heart Left)';
+    if (state === 'SAFE') label = 'Safe Zone';
+    else if (state === 'NORMAL') label = 'Neutral Zone';
+    else if (state === 'DANGER' && hearts > 1) label = 'Critical Danger';
+    return `<span class="threat-dot" aria-hidden="true"></span>${label}`;
 }
 
-function filterStandings(type) {
-    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+function filterStandings(type, btn) {
+    const targetBtn = btn || document.querySelector(`.f-btn[onclick*="${type}"]`);
+    document.querySelectorAll('.f-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+    });
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+        targetBtn.setAttribute('aria-pressed', 'true');
+    }
     renderStandings(type);
 }
 
@@ -109,78 +171,68 @@ function populateGroup(elemId, matches) {
     if (!container) return;
     container.innerHTML = '';
 
+    const initialsOf = name => name.split(/\s+/).map(part => part.charAt(0)).slice(0, 2).join('').toUpperCase();
+    const rankOf = name => {
+        const idx = roster.findIndex(p => p.name === name);
+        return idx === -1 ? '—' : String(idx + 1).padStart(2, '0');
+    };
+
     matches.forEach(m => {
         container.innerHTML += `
             <div class="match-item">
-                <span><strong>${m.p1}</strong> <span class="text-dim">(${m.s1})</span></span>
-                <span class="green-text">VS</span>
-                <span><strong>${m.p2}</strong> <span class="text-dim">(${m.s2})</span></span>
+                <div class="match-side">
+                    <span class="match-avatar" aria-hidden="true">${initialsOf(m.p1)}</span>
+                    <div class="match-id">
+                        <strong>${m.p1}</strong>
+                        <span class="match-meta">
+                            <span class="match-rank">#${rankOf(m.p1)}</span>
+                            <span class="match-state ${m.s1.toLowerCase()}">${m.s1}</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="match-center" aria-hidden="true">
+                    <span class="match-line"></span>
+                    <span class="vs-mark">VS</span>
+                    <span class="match-line"></span>
+                </div>
+                <div class="match-side match-side--right">
+                    <div class="match-id">
+                        <strong>${m.p2}</strong>
+                        <span class="match-meta">
+                            <span class="match-state ${m.s2.toLowerCase()}">${m.s2}</span>
+                            <span class="match-rank">#${rankOf(m.p2)}</span>
+                        </span>
+                    </div>
+                    <span class="match-avatar" aria-hidden="true">${initialsOf(m.p2)}</span>
+                </div>
             </div>
         `;
     });
 }
 
-// Admin Panel & Calculator
-const ADMIN_PIN = "1234";
-
-function openAdminModal() {
-    document.getElementById('adminModal').classList.remove('hidden');
-    document.getElementById('adminPinScreen').classList.remove('hidden');
-    document.getElementById('adminPanelScreen').classList.add('hidden');
-}
-
-function closeAdminModal() {
-    document.getElementById('adminModal').classList.add('hidden');
-}
-
-function verifyAdminPin() {
-    const inputPin = document.getElementById('adminPinInput').value;
-    if (inputPin === ADMIN_PIN) {
-        document.getElementById('adminPinScreen').classList.add('hidden');
-        document.getElementById('adminPanelScreen').classList.remove('hidden');
-        populateAdminDropdowns();
-    } else {
-        alert("Incorrect PIN Code!");
-    }
-}
-
-function populateAdminDropdowns() {
-    const p1 = document.getElementById('p1Select');
-    const p2 = document.getElementById('p2Select');
-    p1.innerHTML = ''; p2.innerHTML = '';
-
-    roster.forEach(player => {
-        p1.innerHTML += `<option value="${player.id}">${player.name} (${player.state})</option>`;
-        p2.innerHTML += `<option value="${player.id}">${player.name} (${player.state})</option>`;
+function syncJourneyLedger() {
+    const counts = { completed: 0, active: 0, locked: 0 };
+    document.querySelectorAll('.chapter-row').forEach(row => {
+        if (row.classList.contains('completed')) counts.completed += 1;
+        else if (row.classList.contains('active-now')) counts.active += 1;
+        else if (row.classList.contains('locked')) counts.locked += 1;
     });
+
+    const setCount = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value).padStart(2, '0');
+    };
+
+    setCount('journeyCompleted', counts.completed);
+    setCount('journeyActive', counts.active);
+    setCount('journeyLocked', counts.locked);
 }
 
-function executeMatchProcessing() {
-    const p1Id = parseInt(document.getElementById('p1Select').value);
-    const p2Id = parseInt(document.getElementById('p2Select').value);
-    const s1 = parseInt(document.getElementById('p1Score').value);
-    const s2 = parseInt(document.getElementById('p2Score').value);
 
-    if (p1Id === p2Id || isNaN(s1) || isNaN(s2)) {
-        alert("Please select two different participants and valid scores.");
-        return;
-    }
 
-    const player1 = roster.find(r => r.id === p1Id);
-    const player2 = roster.find(r => r.id === p2Id);
-
-    const winner = s1 > s2 ? player1 : player2;
-    const loser = s1 > s2 ? player2 : player1;
-
-    const outBox = document.getElementById('calcOutput');
-    outBox.classList.remove('hidden');
-    outBox.innerHTML = `
-        <strong>🏆 WINNER: ${winner.name}</strong> (${s1 > s2 ? s1 : s2} pts)<br>
-        <strong>💀 LOSER: ${loser.name}</strong> (${s1 < s2 ? s1 : s2} pts)
-    `;
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     renderStandings();
     renderMatchups();
+    syncJourneyLedger();
 });
