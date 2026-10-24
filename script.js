@@ -32,6 +32,7 @@ const roster = [
 ];
 
 function switchTab(tabId) {
+    window.scrollTo(0, 0);
     document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => {
         b.classList.remove('active');
@@ -41,38 +42,84 @@ function switchTab(tabId) {
     const activePage = document.getElementById(`page-${tabId}`);
     if (activePage) activePage.classList.add('active');
 
-    const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+    const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(
+        b => b.getAttribute('onclick')?.trim() === `switchTab('${tabId}')`
+    );
     if (targetBtn) {
         targetBtn.classList.add('active');
         targetBtn.setAttribute('aria-current', 'page');
     }
 }
 
-function renderStandings(filter = 'ALL') {
+let activeStatusFilter = 'ALL';
+let activeSearch = '';
+
+function normalizedSearchValue() {
+    return activeSearch.trim().toLocaleLowerCase();
+}
+
+function getVisibleRoster() {
+    const query = normalizedSearchValue();
+    return roster.filter(p =>
+        (activeStatusFilter === 'ALL' || p.state === activeStatusFilter) &&
+        (!query || p.name.toLocaleLowerCase().includes(query))
+    );
+}
+
+function getEmptyResultsMessage() {
+    const query = activeSearch.trim();
+    return query
+        ? `No name matches “${query}”. Try a different search or status filter.`
+        : 'No survivors match the current status filter.';
+}
+
+function renderStandings(filter = activeStatusFilter) {
+    activeStatusFilter = filter;
+
     const tableBody = document.getElementById('standingsTable');
     if(!tableBody) return;
     tableBody.innerHTML = '';
 
-    const filtered = roster.filter(p => filter === 'ALL' || p.state === filter);
+    const filtered = getVisibleRoster();
 
-    filtered.forEach((p, idx) => {
+    if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        const heartsVisual = [0, 1, 2].map(i => `
-            <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
-        `).join('');
-        
-        let stateClass = p.state.toLowerCase();
+        tr.className = 'table-empty';
+        const td = document.createElement('td');
+        td.colSpan = 6;
 
-        tr.innerHTML = `
-            <td class="cell-rank">${idx + 1}</td>
-            <td class="cell-player"><strong>${p.name}</strong></td>
-            <td class="cell-state"><span class="badge-mini ${stateClass}">${p.state}</span></td>
-            <td class="cell-points"><strong>${p.points}</strong> <span class="unit">PTS</span></td>
-            <td class="cell-hearts"><span class="hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${heartsVisual}</span> <span class="heart-count">(${p.hearts}/3)</span></td>
-            <td class="cell-threat"><span class="threat-box ${stateClass}">${getThreatStatus(p.state, p.hearts)}</span></td>
-        `;
-        tableBody.appendChild(tr);
-    });
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        const title = document.createElement('strong');
+        title.className = 'empty-state-title';
+        title.textContent = 'No Survivors Found';
+        const text = document.createElement('span');
+        text.className = 'empty-state-text';
+        text.textContent = getEmptyResultsMessage();
+        empty.append(title, text);
+        td.append(empty);
+        tr.append(td);
+        tableBody.append(tr);
+    } else {
+        filtered.forEach((p, idx) => {
+            const tr = document.createElement('tr');
+            const heartsVisual = [0, 1, 2].map(i => `
+                <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
+            `).join('');
+            
+            let stateClass = p.state.toLowerCase();
+
+            tr.innerHTML = `
+                <td class="cell-rank">${idx + 1}</td>
+                <td class="cell-player"><strong>${p.name}</strong></td>
+                <td class="cell-state"><span class="badge-mini ${stateClass}">${p.state}</span></td>
+                <td class="cell-points"><strong>${p.points}</strong> <span class="unit">PTS</span></td>
+                <td class="cell-hearts"><span class="hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${heartsVisual}</span> <span class="heart-count">(${p.hearts}/3)</span></td>
+                <td class="cell-threat"><span class="threat-box ${stateClass}">${getThreatStatus(p.state, p.hearts)}</span></td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
 
     renderSurvivorCards(filtered, filter);
 }
@@ -83,41 +130,61 @@ function renderSurvivorCards(players, filter) {
 
     grid.innerHTML = '';
 
-    players.forEach((p, idx) => {
-        const stateClass = p.state.toLowerCase();
-        const initials = p.name.split(/\s+/).map(part => part.charAt(0)).slice(0, 2).join('').toUpperCase();
-        const hearts = [0, 1, 2].map(i => `
-            <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
-        `).join('');
+    if (players.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'dossier-empty';
+        const mark = document.createElement('span');
+        mark.className = 'empty-state-mark';
+        mark.setAttribute('aria-hidden', 'true');
+        const title = document.createElement('strong');
+        title.className = 'empty-state-title';
+        title.textContent = 'No Survivors Found';
+        const text = document.createElement('p');
+        text.className = 'empty-state-text';
+        text.textContent = getEmptyResultsMessage();
+        empty.append(mark, title, text);
+        grid.appendChild(empty);
+    } else {
+        players.forEach((p, idx) => {
+            const stateClass = p.state.toLowerCase();
+            const initials = p.name.split(/\s+/).map(part => part.charAt(0)).slice(0, 2).join('').toUpperCase();
+            const hearts = [0, 1, 2].map(i => `
+                <span class="heart ${i < p.hearts ? 'is-full' : 'is-empty'}" aria-hidden="true">${i < p.hearts ? '♥' : '♡'}</span>
+            `).join('');
 
-        const card = document.createElement('article');
-        card.className = `survivor-card ${stateClass}`;
-        card.innerHTML = `
-            <div class="survivor-top">
-                <span class="survivor-rank">#${String(idx + 1).padStart(2, '0')}</span>
-                <span class="survivor-state">${p.state}</span>
-            </div>
-            <div class="survivor-identity">
-                <span class="survivor-avatar" aria-hidden="true">${initials}</span>
-                <div class="survivor-id">
-                    <h4 class="survivor-name">${p.name}</h4>
-                    <span class="survivor-points"><strong>${p.points}</strong> PTS</span>
+            const card = document.createElement('article');
+            card.className = `survivor-card ${stateClass}`;
+            card.innerHTML = `
+                <div class="survivor-top">
+                    <span class="survivor-rank">#${String(idx + 1).padStart(2, '0')}</span>
+                    <span class="survivor-state">${p.state}</span>
                 </div>
-            </div>
-            <div class="survivor-vitals">
-                <span class="survivor-hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${hearts}</span>
-                <span class="survivor-heart-count">${p.hearts}/3</span>
-            </div>
-            <div class="survivor-threat">${getThreatStatus(p.state, p.hearts)}</div>
-        `;
-        grid.appendChild(card);
-    });
+                <div class="survivor-identity">
+                    <span class="survivor-avatar" aria-hidden="true">${initials}</span>
+                    <div class="survivor-id">
+                        <h4 class="survivor-name">${p.name}</h4>
+                        <span class="survivor-points"><strong>${p.points}</strong> PTS</span>
+                    </div>
+                </div>
+                <div class="survivor-vitals">
+                    <span class="survivor-hearts" role="img" aria-label="${p.hearts} of 3 hearts remaining">${hearts}</span>
+                    <span class="survivor-heart-count">${p.hearts}/3</span>
+                </div>
+                <div class="survivor-threat">${getThreatStatus(p.state, p.hearts)}</div>
+            `;
+            grid.appendChild(card);
+        });
+    }
 
     const count = document.getElementById('survivorDossierCount');
     if (count) {
-        count.textContent = filter === 'ALL'
-            ? `${players.length} SURVIVORS DISPLAYED`
-            : `${players.length} OF ${roster.length} ${filter} SURVIVORS`;
+        if (normalizedSearchValue()) {
+            count.textContent = `${players.length} OF ${roster.length} SURVIVORS FOUND`;
+        } else {
+            count.textContent = filter === 'ALL'
+                ? `${players.length} SURVIVORS DISPLAYED`
+                : `${players.length} OF ${roster.length} ${filter} SURVIVORS`;
+        }
     }
 }
 
@@ -140,6 +207,42 @@ function filterStandings(type, btn) {
         targetBtn.setAttribute('aria-pressed', 'true');
     }
     renderStandings(type);
+}
+
+function initPlayerSearch() {
+    const input = document.getElementById('playerSearch');
+    const clearBtn = document.getElementById('searchClear');
+    if (!input) return;
+
+    const syncClearButton = () => {
+        if (clearBtn) clearBtn.hidden = input.value.length === 0;
+    };
+
+    const applySearch = () => {
+        activeSearch = input.value;
+        syncClearButton();
+        renderStandings(activeStatusFilter);
+    };
+
+    const clearSearch = () => {
+        input.value = '';
+        activeSearch = '';
+        syncClearButton();
+        renderStandings(activeStatusFilter);
+        input.focus();
+    };
+
+    input.addEventListener('input', applySearch);
+    input.addEventListener('search', applySearch);
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && input.value) {
+            event.preventDefault();
+            clearSearch();
+        }
+    });
+
+    if (clearBtn) clearBtn.addEventListener('click', clearSearch);
+    syncClearButton();
 }
 
 // مواجهات الجولة 7 الرسمية مطابقة للبوستر الثامن
@@ -232,7 +335,9 @@ function syncJourneyLedger() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    initPlayerSearch();
     renderStandings();
     renderMatchups();
     syncJourneyLedger();
+    window.setTimeout(() => document.body.classList.add('intro-complete'), 1400);
 });
