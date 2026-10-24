@@ -21,7 +21,9 @@
     <header class="navbar">
         <div class="container nav-container">
             <div class="logo-box" onclick="switchTab('home')">
-                <span class="hazard-badge" aria-hidden="true">☣️</span>
+                <span class="logo-mark">
+                    <img src="assets/illustrations/official-tournament-logo.jpg" alt="Official THE LAST OF FPL tournament logo" width="640" height="640" decoding="async">
+                </span>
                 <div class="logo-text">
                     <h1>THE LAST OF <span class="green-text">FPL</span></h1>
                     <span class="sub-logo">EMPERORES KINGDOM FANTASY</span>
@@ -30,7 +32,7 @@
 
             <nav class="nav-links" aria-label="Primary navigation">
                 <button class="nav-btn active" aria-current="page" onclick="switchTab('home')">OVERVIEW</button>
-                <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS  </button>
+                <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS </button>
                 <button class="nav-btn" onclick="switchTab('community')">COMMUNITY</button>
                 <button class="nav-btn" onclick="switchTab('leaderboard')">GW6 STANDINGS</button>
                 <button class="nav-btn" onclick="switchTab('matchups')">GW7 MATCHES</button>
@@ -93,6 +95,13 @@
                         <span class="telemetry-val"><span class="signal-dot"></span>Stable</span>
                     </div>
                 </div>
+
+                <figure class="hero-logo-plate">
+                    <div class="hero-logo-frame">
+                        <img src="assets/illustrations/official-tournament-logo.jpg" alt="Official THE LAST OF FPL key art: the Emperores Kingdom Fantasy crest above a ruined, red-lit city, with the title THE LAST OF FPL and the tagline Only the best will survive." width="640" height="640" decoding="async">
+                    </div>
+                    <figcaption>Official Tournament Key Art</figcaption>
+                </figure>
             </div>
         </section>
     </main>
@@ -263,11 +272,11 @@
                     <span class="tag-green">HOST & COMMUNITY</span>
                     <h2>EMPERORES KINGDOM FANTASY</h2>
                     <p class="lead-p">
-                        The ultimate gathering for competitive Fantasy Premier League players. Built and managed by <strong>ziad</strong>, creating custom multi-layered tournaments that redefine standard FPL mini-leagues.
+                        The ultimate gathering for competitive Fantasy Premier League players. Built and managed by <strong>ZIAD</strong>, creating custom multi-layered tournaments that redefine standard FPL mini-leagues.
                     </p>
                     <div class="specs-grid">
                         <div class="spec-box">
-                            <strong>11K+</strong>
+                            <strong>13K+</strong>
                             <span>Active Members</span>
                         </div>
                         <div class="spec-box">
@@ -275,7 +284,7 @@
                             <span>Selected Survivors</span>
                         </div>
                         <div class="spec-box">
-                            <strong>ziad</strong>
+                            <strong>ZIAD</strong>
                             <span>Project Lead</span>
                         </div>
                     </div>
@@ -298,6 +307,19 @@
                     <button class="f-btn" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (12)</button>
                     <button class="f-btn" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (6)</button>
                 </div>
+            </div>
+
+            <div class="standings-search" role="search" aria-label="Search survivors">
+                <label class="search-label" for="playerSearch">Search Survivors</label>
+                <div class="search-field">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="m20 20-3.5-3.5"></path>
+                    </svg>
+                    <input id="playerSearch" class="search-input" type="search" placeholder="Name or partial name…" autocomplete="off" spellcheck="false" aria-controls="standingsTable survivorCards" aria-describedby="searchHint">
+                    <button class="search-clear" id="searchClear" type="button" aria-label="Clear search" hidden>&times;</button>
+                </div>
+                <span class="search-hint" id="searchHint">Live results</span>
             </div>
 
             <div class="glass-table-wrapper" role="region" aria-label="GW6 standings table" tabindex="0">
@@ -377,7 +399,8 @@
 
     <footer>
         <div class="container">
-            <p>THE LAST OF FPL — EMPERORES KINGDOM FANTASY © 2026 | Organizer & Lead: ZIAD </p>
+            <img class="footer-logo" src="assets/illustrations/official-tournament-logo.jpg" alt="THE LAST OF FPL official tournament logo" width="640" height="640" decoding="async">
+            <p>THE LAST OF FPL — EMPERORES KINGDOM FANTASY © 2026 | Organizer & Lead: ziad</p>
         </div>
     </footer>
 
