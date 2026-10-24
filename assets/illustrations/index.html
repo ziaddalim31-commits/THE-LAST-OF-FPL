@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050604">
+    <meta name="color-scheme" content="dark">
+    <title>THE LAST OF FPL — Official Survival Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Teko:wght@600;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="assets/illustrations/hero-endure-city.jpg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="apocalypse-theme">
+
+    <div class="scanline-overlay" aria-hidden="true"></div>
+    <div class="particle-ambient" aria-hidden="true"></div>
+
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <div class="logo-box" onclick="switchTab('home')">
+                <span class="hazard-badge" aria-hidden="true">☣️</span>
+                <div class="logo-text">
+                    <h1>THE LAST OF <span class="green-text">FPL</span></h1>
+                    <span class="sub-logo">EMPERORES KINGDOM FANTASY</span>
+                </div>
+            </div>
+
+            <nav class="nav-links" aria-label="Primary navigation">
+                <button class="nav-btn active" aria-current="page" onclick="switchTab('home')">OVERVIEW</button>
+                <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS ROADMAP</button>
+                <button class="nav-btn" onclick="switchTab('community')">COMMUNITY</button>
+                <button class="nav-btn" onclick="switchTab('leaderboard')">GW6 STANDINGS</button>
+                <button class="nav-btn" onclick="switchTab('matchups')">GW7 MATCHES</button>
+                <button class="nav-btn" onclick="switchTab('rules')">RULES & LORE</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- PAGE 1: HOME -->
+    <main id="page-home" class="tab-page active">
+        <section class="hero-section">
+            <div class="container text-center">
+                <div class="outbreak-banner">
+                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW6 UPDATE • ENTERING GAMEWEEK 7 🏙️
+                </div>
+                <h1 class="main-title">ENDURE AND <span class="green-glow">SURVIVE</span></h1>
+                <p class="hero-lead">
+                    24 FPL Survivors across the Quarantine Zone. Official standings post-GW6 & GW7 match pairings are now live.
+                </p>
+
+                <div class="stats-hub">
+                    <div class="stat-card safe-border">
+                        <span class="stat-num">6</span>
+                        <span class="stat-lbl">SAFE (25%)</span>
+                    </div>
+                    <div class="stat-card normal-border">
+                        <span class="stat-num">12</span>
+                        <span class="stat-lbl">NORMAL (50%)</span>
+                    </div>
+                    <div class="stat-card danger-border">
+                        <span class="stat-num">6</span>
+                        <span class="stat-lbl">DANGER (25%)</span>
+                    </div>
+                    <div class="stat-card elim-border">
+                        <span class="stat-num">0</span>
+                        <span class="stat-lbl">ELIMINATED</span>
+                    </div>
+                </div>
+
+                <div class="cta-actions">
+                    <button class="btn btn-main" onclick="switchTab('leaderboard')">📊 VIEW GW6 STANDINGS</button>
+                    <button class="btn btn-outline" onclick="switchTab('matchups')">⚔️ EXPLORE GW7 MATCHES</button>
+                </div>
+
+                <div class="hero-telemetry" aria-hidden="true">
+                    <div class="telemetry-cell">
+                        <span class="telemetry-key">Sector</span>
+                        <span class="telemetry-val">Quarantine Zone</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-key">Phase</span>
+                        <span class="telemetry-val">GW7 In Progress</span>
+                    </div>
+                    <div class="telemetry-cell">
+                        <span class="telemetry-key">Survivors</span>
+                        <span class="telemetry-val">24 Active</span>
+                    </div>
+                    <div class="telemetry-cell telemetry-signal">
+                        <span class="telemetry-key">Signal</span>
+                        <span class="telemetry-val"><span class="signal-dot"></span>Stable</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- PAGE 2: CHAPTERS ROADMAP -->
+    <main id="page-chapters" class="tab-page">
+        <div class="container">
+            <span class="page-kicker">Archive // Timeline</span>
+            <h2 class="section-heading text-left">TOURNAMENT CHAPTERS ROADMAP</h2>
+            <p class="sub-heading">The full post-apocalyptic timeline from GW3 to GW38</p>
+
+            <div class="journey-board" aria-label="Chapter journey overview">
+                <div class="journey-stat" data-journey="completed">
+                    <span class="journey-num" id="journeyCompleted">01</span>
+                    <span class="journey-lbl">Completed</span>
+                </div>
+                <div class="journey-stat" data-journey="active">
+                    <span class="journey-num" id="journeyActive">01</span>
+                    <span class="journey-lbl">Active Sector</span>
+                </div>
+                <div class="journey-stat" data-journey="locked">
+                    <span class="journey-num" id="journeyLocked">06</span>
+                    <span class="journey-lbl">Sealed Ahead</span>
+                </div>
+                <div class="journey-route">
+                    <span class="route-kicker">Survival Route</span>
+                    <span class="route-code">GW3 <span class="route-arrow" aria-hidden="true">→</span> GW38</span>
+                </div>
+            </div>
+
+            <div class="chapters-vertical-list">
+                <div class="chapter-row completed" style="--chapter-art: url('assets/illustrations/chapter-0-the-outbreak.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge">COMPLETED</div>
+                        <div class="chap-info">
+                            <h3>🕯️ Chapter 0 — THE OUTBREAK</h3>
+                            <span class="chap-span">GW3</span>
+                            <p lang="ar" dir="rtl">البداية وتصنيف المشاركين الـ24 إلى SAFE وNORMAL وDANGER، دون مواجهات أو إقصاء.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-0-the-outbreak.jpg" alt="Abandoned city street with emergency tents and debris after the outbreak" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row active-now" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge active-tag">CURRENT (GW7)</div>
+                        <div class="chap-info">
+                            <h3>🏙️ Chapter I — QUARANTINE ZONE</h3>
+                            <span class="chap-span">GW4 — GW8</span>
+                            <p lang="ar" dir="rtl">مواجهات مباشرة 1v1، وتغيّر الحالات، ونظام الأرواح ❤️. لا يوجد إقصاء مباشر خلال هذا الفصل.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-1-quarantine-zone.jpg" alt="Quarantine zone perimeter wall and gate under a pale grey sky" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-2-the-infection.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-info">
+                            <h3>☣️ Chapter II — THE INFECTION</h3>
+                            <span class="chap-span">GW9 — GW14</span>
+                            <p lang="ar" dir="rtl">ظهور العدوى، ارتفاع المخاطر، وبداية الإقصاء الحقيقي؛ الوصول إلى صفر روح يعني الخروج من البطولة.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-2-the-infection.jpg" alt="Flooded underpass overtaken by creeping fungal growth" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-3-the-forest.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-info">
+                            <h3>🌲 Chapter III — THE FOREST</h3>
+                            <span class="chap-span">GW15 — GW22</span>
+                            <p lang="ar" dir="rtl">مرحلة الموارد وأدوات النجاة مثل MEDKIT، مع أحداث خاصة قد تغيّر مجرى المنافسة.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-3-the-forest.jpg" alt="Makeshift survivor camp at the edge of a dense overgrown forest" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-4-the-tunnels.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-info">
+                            <h3>🚇 Chapter IV — THE TUNNELS</h3>
+                            <span class="chap-span">GW23 — GW30</span>
+                            <p lang="ar" dir="rtl">أنفاق خطرة، وظهور Clickers في جولات خاصة، ومواجهات أكثر صعوبة.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-4-the-tunnels.jpg" alt="Dark subway tunnel littered with debris and lit by a single faint light" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-5-jackson.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-info">
+                            <h3>🏔️ Chapter V — JACKSON</h3>
+                            <span class="chap-span">GW31 — GW34</span>
+                            <p lang="ar" dir="rtl">مرحلة الناجين المتبقين، مع تقليص المنافسة نحو الأربعة الأوائل.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-5-jackson.jpg" alt="Snow-covered fortified settlement beneath mountains" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-6-firefly-war.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-info">
+                            <h3>🔥 Chapter VI — FIREFLY WAR</h3>
+                            <span class="chap-span">GW35 — GW37</span>
+                            <p lang="ar" dir="rtl">صراع المرحلة الأخيرة لتحديد المتأهلين إلى النهائي.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-6-firefly-war.jpg" alt="Burning city skyline at night during the final conflict" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+
+                <div class="chapter-row locked final-chap" style="--chapter-art: url('assets/illustrations/chapter-7-the-hospital-final.jpg');">
+                    <div class="chapter-content-wrapper">
+                        <div class="chap-status-badge lock-tag">GRAND FINAL</div>
+                        <div class="chap-info">
+                            <h3>🏥 GW38 — THE HOSPITAL: THE FINAL</h3>
+                            <span class="chap-span">GW38</span>
+                            <p lang="ar" dir="rtl">المواجهة الأخيرة بين الناجيين الأخيرين لتحديد البطل: <strong>THE LAST MANAGER</strong>.</p>
+                        </div>
+                    </div>
+                    <figure class="chapter-visual">
+                        <img src="assets/illustrations/chapter-7-the-hospital-final.jpg" alt="Derelict hospital corridor in cold, faded light" width="1280" height="731" loading="lazy">
+                        <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
+                    </figure>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PAGE 3: COMMUNITY -->
+    <main id="page-community" class="tab-page">
+        <div class="container">
+            <span class="page-kicker">Signal // Community</span>
+            <div class="community-hero-card">
+                <div class="community-visual">
+                    <div class="crest-frame">
+                        <span class="crest-icon" aria-hidden="true">🛡️</span>
+                        <div class="crest-title">EMPERORES KINGDOM</div>
+                        <div class="crest-sub">11,000+ MEMBERS</div>
+                    </div>
+                </div>
+                <div class="community-details">
+                    <span class="tag-green">HOST & COMMUNITY</span>
+                    <h2>EMPERORES KINGDOM FANTASY</h2>
+                    <p class="lead-p">
+                        The ultimate gathering for competitive Fantasy Premier League players. Built and managed by <strong>ziad</strong>, creating custom multi-layered tournaments that redefine standard FPL mini-leagues.
+                    </p>
+                    <div class="specs-grid">
+                        <div class="spec-box">
+                            <strong>11K+</strong>
+                            <span>Active Members</span>
+                        </div>
+                        <div class="spec-box">
+                            <strong>24</strong>
+                            <span>Selected Survivors</span>
+                        </div>
+                        <div class="spec-box">
+                            <strong>ziad</strong>
+                            <span>Project Lead</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PAGE 4: STANDINGS LEADERBOARD (GW6) -->
+    <main id="page-leaderboard" class="tab-page">
+        <div class="container">
+            <div class="page-title-bar">
+                <div class="page-title-block">
+                    <span class="page-kicker">Registry // GW6</span>
+                    <h2>GW6 STANDINGS & STATUTS (APRÈS LA 6e JOURNÉE)</h2>
+                </div>
+                <div class="filter-group">
+                    <button class="f-btn active" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (24)</button>
+                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (6)</button>
+                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (12)</button>
+                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (6)</button>
+                </div>
+            </div>
+
+            <div class="glass-table-wrapper" role="region" aria-label="GW6 standings table" tabindex="0">
+                <table class="survival-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Rank</th>
+                            <th scope="col">Participant</th>
+                            <th scope="col">Current State</th>
+                            <th scope="col">GW6 Points</th>
+                            <th scope="col">Hearts Balance</th>
+                            <th scope="col">Threat Assessment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standingsTable"></tbody>
+                </table>
+            </div>
+
+            <section class="survivor-dossier" aria-labelledby="survivorDossierTitle">
+                <div class="dossier-head">
+                    <div>
+                        <span class="dossier-kicker">Field Registry // GW6</span>
+                        <h3 class="dossier-title" id="survivorDossierTitle">SURVIVOR DOSSIER</h3>
+                    </div>
+                    <p class="dossier-count" id="survivorDossierCount" aria-live="polite">24 SURVIVORS DISPLAYED</p>
+                </div>
+                <div class="survivor-grid" id="survivorCards"></div>
+            </section>
+        </div>
+    </main>
+
+    <!-- PAGE 5: GW7 MATCHUPS -->
+    <main id="page-matchups" class="tab-page">
+        <div class="container">
+            <span class="page-kicker">Pairings // GW7</span>
+            <h2 class="section-heading text-left">GW7 — OFFICIAL MATCHUPS</h2>
+            <p class="sub-heading">Quarantine Zone Battles — 12 Matches • 24 Survivors</p>
+
+            <div class="groups-layout">
+                <div class="group-column">
+                    <div class="grp-header grp-a">SAFE vs DANGER (6 Matches)</div>
+                    <div class="match-list" id="groupA-list"></div>
+                </div>
+                <div class="group-column">
+                    <div class="grp-header grp-b">NORMAL vs NORMAL (6 Matches)</div>
+                    <div class="match-list" id="groupB-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PAGE 6: RULES -->
+    <main id="page-rules" class="tab-page">
+        <div class="container">
+            <span class="page-kicker">Manual // Protocol</span>
+            <h2 class="section-heading text-left">OFFICIAL SURVIVAL MANUAL</h2>
+            <div class="rules-grid">
+                <div class="rule-card">
+                    <h3>🟢 SAFE STATE</h3>
+                    <p>Reste en SAFE ou passe en NORMAL (si perd).</p>
+                </div>
+                <div class="rule-card">
+                    <h3>🟡 NORMAL STATE</h3>
+                    <p>Monte en SAFE (si gagne) ou tombe en DANGER (si perd).</p>
+                </div>
+                <div class="rule-card">
+                    <h3>🔴 DANGER STATE</h3>
+                    <p>Monte en NORMAL (si gagne) أو perd 1 cœur (si perd).</p>
+                </div>
+                <div class="rule-card">
+                    <h3>💀 HEARTS STATS</h3>
+                    <p>4 joueurs ont perdu des cœurs (Fatima, Wld Lhaj, Moulchi à 2/3 ❤️ | Abdel Chipi à 1/3 ❤️).</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>THE LAST OF FPL — EMPERORES KINGDOM FANTASY © 2026 | Organizer & Lead: ziad</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
