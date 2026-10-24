@@ -3617,3 +3617,73 @@ footer p::before {
         background-attachment: scroll;
     }
 }
+
+/* ==========================================
+   THE LAST OF FPL — MOBILE PERFORMANCE
+   Safe visual optimization
+   ========================================== */
+
+@media (max-width: 768px) {
+
+    /* Disable expensive fixed backgrounds */
+    html,
+    body {
+        background-attachment: scroll !important;
+    }
+
+    /* Reduce continuous fog rendering */
+    .particle-ambient::before {
+        animation: none !important;
+        filter: none !important;
+    }
+
+    /* Reduce texture compositing */
+    .particle-ambient::after {
+        mix-blend-mode: normal;
+        opacity: 0.02;
+    }
+
+    /* Simplify scanline overlay */
+    .scanline-overlay {
+        mix-blend-mode: normal;
+        opacity: 0.10;
+    }
+
+    /* Reduce blur calculations */
+    .navbar,
+    .hero-telemetry,
+    .outbreak-banner,
+    .chap-status-badge {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+
+    .navbar {
+        background: rgba(5, 6, 4, 0.97);
+    }
+
+    /* Reduce costly hover-like transitions */
+    .survivor-card,
+    .survivor-avatar,
+    .match-avatar,
+    .vs-mark,
+    .chapter-visual img {
+        transition: none !important;
+    }
+
+    /* Avoid animated card movement on touch devices */
+    .survivor-card:hover {
+        transform: none;
+    }
+}
+
+/* Respect accessibility settings on every device */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
