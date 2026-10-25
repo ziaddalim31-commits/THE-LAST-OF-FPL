@@ -32,10 +32,10 @@
 
             <nav class="nav-links" aria-label="Primary navigation">
                 <button class="nav-btn active" aria-current="page" onclick="switchTab('home')">OVERVIEW</button>
-                <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS </button>
+                <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS</button>
                 <button class="nav-btn" onclick="switchTab('community')">COMMUNITY</button>
-                <button class="nav-btn" onclick="switchTab('leaderboard')">GW6 STANDINGS</button>
-                <button class="nav-btn" onclick="switchTab('matchups')">GW7 MATCHES</button>
+                <button class="nav-btn" onclick="switchTab('leaderboard')">GW7 STANDINGS</button>
+                <button class="nav-btn" onclick="switchTab('matchups')">GW8 MATCHES</button>
                 <button class="nav-btn" onclick="switchTab('rules')">RULES & LORE</button>
             </nav>
         </div>
@@ -46,35 +46,35 @@
         <section class="hero-section">
             <div class="container text-center">
                 <div class="outbreak-banner">
-                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW6 UPDATE • ENTERING GAMEWEEK 7 🏙️
+                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW7 UPDATE • GAMEWEEK 8 IS LIVE
                 </div>
                 <h1 class="main-title">ENDURE AND <span class="green-glow">SURVIVE</span></h1>
                 <p class="hero-lead">
-                    24 FPL Survivors across the Quarantine Zone. Official standings post-GW6 & GW7 match pairings are now live.
+                    The GW7 standings and all 12 GW8 matchups are live. Track every survivor, every heart, and every battle across the Quarantine Zone.
                 </p>
 
                 <div class="stats-hub">
                     <div class="stat-card safe-border">
-                        <span class="stat-num">6</span>
-                        <span class="stat-lbl">SAFE (25%)</span>
+                        <span class="stat-num" data-stat="safe">8</span>
+                        <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(33%)</span></span>
                     </div>
                     <div class="stat-card normal-border">
-                        <span class="stat-num">12</span>
-                        <span class="stat-lbl">NORMAL (50%)</span>
+                        <span class="stat-num" data-stat="normal">8</span>
+                        <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(33%)</span></span>
                     </div>
                     <div class="stat-card danger-border">
-                        <span class="stat-num">6</span>
-                        <span class="stat-lbl">DANGER (25%)</span>
+                        <span class="stat-num" data-stat="danger">8</span>
+                        <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(33%)</span></span>
                     </div>
                     <div class="stat-card elim-border">
-                        <span class="stat-num">0</span>
+                        <span class="stat-num" data-stat="eliminated">0</span>
                         <span class="stat-lbl">ELIMINATED</span>
                     </div>
                 </div>
 
                 <div class="cta-actions">
-                    <button class="btn btn-main" onclick="switchTab('leaderboard')">📊 VIEW GW6 STANDINGS</button>
-                    <button class="btn btn-outline" onclick="switchTab('matchups')">⚔️ EXPLORE GW7 MATCHES</button>
+                    <button class="btn btn-main" onclick="switchTab('leaderboard')">VIEW GW7 STANDINGS</button>
+                    <button class="btn btn-outline" onclick="switchTab('matchups')">EXPLORE GW8 MATCHUPS</button>
                 </div>
 
                 <div class="hero-telemetry" aria-hidden="true">
@@ -84,11 +84,11 @@
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Phase</span>
-                        <span class="telemetry-val">GW7 In Progress</span>
+                        <span class="telemetry-val">GW8 In Progress</span>
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Survivors</span>
-                        <span class="telemetry-val">24 Active</span>
+                        <span class="telemetry-val"><span data-stat="active">24</span> Active</span>
                     </div>
                     <div class="telemetry-cell telemetry-signal">
                         <span class="telemetry-key">Signal</span>
@@ -150,7 +150,7 @@
 
                 <div class="chapter-row active-now" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
                     <div class="chapter-content-wrapper">
-                        <div class="chap-status-badge active-tag">CURRENT (GW7)</div>
+                        <div class="chap-status-badge active-tag">CURRENT (GW8)</div>
                         <div class="chap-info">
                             <h3>🏙️ Chapter I — QUARANTINE ZONE</h3>
                             <span class="chap-span">GW4 — GW8</span>
@@ -293,19 +293,20 @@
         </div>
     </main>
 
-    <!-- PAGE 4: STANDINGS LEADERBOARD (GW6) -->
+    <!-- PAGE 4: STANDINGS LEADERBOARD -->
     <main id="page-leaderboard" class="tab-page">
         <div class="container">
             <div class="page-title-bar">
                 <div class="page-title-block">
-                    <span class="page-kicker">Registry // GW6</span>
-                    <h2>GW6 STANDINGS & STATUTS (APRÈS LA 6e JOURNÉE)</h2>
+                    <span class="page-kicker">Registry // GW7 Results</span>
+                    <h2>GW7 STANDINGS &amp; STATUS</h2>
+                    <p class="page-title-note">Field order by current state • GW8 in progress</p>
                 </div>
                 <div class="filter-group">
-                    <button class="f-btn active" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (24)</button>
-                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (6)</button>
-                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (12)</button>
-                    <button class="f-btn" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (6)</button>
+                    <button class="f-btn active" data-filter="ALL" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (24)</button>
+                    <button class="f-btn" data-filter="SAFE" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (8)</button>
+                    <button class="f-btn" data-filter="NORMAL" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (8)</button>
+                    <button class="f-btn" data-filter="DANGER" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (8)</button>
                 </div>
             </div>
 
@@ -322,26 +323,29 @@
                 <span class="search-hint" id="searchHint">Live results</span>
             </div>
 
-            <div class="glass-table-wrapper" role="region" aria-label="GW6 standings table" tabindex="0">
+            <div class="glass-table-wrapper" role="region" aria-label="GW7 standings — verified match points" tabindex="0">
                 <table class="survival-table">
                     <thead>
                         <tr>
                             <th scope="col">Rank</th>
                             <th scope="col">Participant</th>
                             <th scope="col">Current State</th>
-                            <th scope="col">GW6 Points</th>
-                            <th scope="col">Hearts Balance</th>
-                            <th scope="col">Threat Assessment</th>
+                            <th scope="col">GW7 Pts</th>
+                            <th scope="col">Hearts</th>
+                            <th scope="col">Threat</th>
                         </tr>
                     </thead>
                     <tbody id="standingsTable"></tbody>
                 </table>
             </div>
+            <p class="standings-note" id="standingsPointsNote">
+                Survivors are grouped SAFE → NORMAL → DANGER. GW7 points load from the completed matches; GW8 scores remain pending.
+            </p>
 
             <section class="survivor-dossier" aria-labelledby="survivorDossierTitle">
                 <div class="dossier-head">
                     <div>
-                        <span class="dossier-kicker">Field Registry // GW6</span>
+                        <span class="dossier-kicker">Field Registry // GW7</span>
                         <h3 class="dossier-title" id="survivorDossierTitle">SURVIVOR DOSSIER</h3>
                     </div>
                     <p class="dossier-count" id="survivorDossierCount" aria-live="polite">24 SURVIVORS DISPLAYED</p>
@@ -351,20 +355,41 @@
         </div>
     </main>
 
-    <!-- PAGE 5: GW7 MATCHUPS -->
+    <!-- PAGE 5: GW8 MATCHUPS -->
     <main id="page-matchups" class="tab-page">
         <div class="container">
-            <span class="page-kicker">Pairings // GW7</span>
-            <h2 class="section-heading text-left">GW7 — OFFICIAL MATCHUPS</h2>
-            <p class="sub-heading">Quarantine Zone Battles — 12 Matches • 24 Survivors</p>
+            <span class="page-kicker">Pairings // GW8</span>
+            <h2 class="section-heading text-left">GW8 — OFFICIAL MATCHUPS</h2>
+            <p class="sub-heading" id="matchupSummary">Quarantine Zone Battles — 8 SAFE vs DANGER • 4 NORMAL vs NORMAL • 12 Matches</p>
+
+            <div class="matchups-legend" aria-label="Survival state legend">
+                <span class="legend-item"><span class="legend-dot safe" aria-hidden="true"></span>SAFE</span>
+                <span class="legend-item"><span class="legend-dot normal" aria-hidden="true"></span>NORMAL</span>
+                <span class="legend-item"><span class="legend-dot danger" aria-hidden="true"></span>DANGER</span>
+                <span class="legend-note">GW8 scores pending</span>
+            </div>
 
             <div class="groups-layout">
                 <div class="group-column">
-                    <div class="grp-header grp-a">SAFE vs DANGER (6 Matches)</div>
+                    <div class="grp-header grp-a">
+                        <span class="grp-title">
+                            <span class="grp-chip safe">SAFE</span>
+                            <span class="grp-vs">VS</span>
+                            <span class="grp-chip danger">DANGER</span>
+                        </span>
+                        <span class="grp-count">8 MATCHES</span>
+                    </div>
                     <div class="match-list" id="groupA-list"></div>
                 </div>
                 <div class="group-column">
-                    <div class="grp-header grp-b">NORMAL vs NORMAL (6 Matches)</div>
+                    <div class="grp-header grp-b">
+                        <span class="grp-title">
+                            <span class="grp-chip normal">NORMAL</span>
+                            <span class="grp-vs">VS</span>
+                            <span class="grp-chip normal">NORMAL</span>
+                        </span>
+                        <span class="grp-count">4 MATCHES</span>
+                    </div>
                     <div class="match-list" id="groupB-list"></div>
                 </div>
             </div>
@@ -399,11 +424,26 @@
 
     <footer>
         <div class="container">
-            
-            <p>THE LAST OF FPL — EMPERORES KINGDOM FANTASY © 2026 | Organizer & Lead: ziad</p>
+            <img class="footer-logo" src="assets/illustrations/tournament%20groupe%20logo.jpg" alt="" width="58" height="58" loading="lazy">
+            <p>THE LAST OF FPL — EMPERORES KINGDOM FANTASY © 2026 | Organizer &amp; Lead: ziad</p>
         </div>
     </footer>
 
-    <script src="script.js"></script>
+  <!-- Supabase library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Supabase configuration -->
+<script>
+  const SUPABASE_URL = "https://xpaouenjkfdynjkhbsrb.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_VhZK3TH1dyphsH8HzoWGmQ_kF4VLQie";
+
+ window.supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+</script>
+
+<!-- Main website JavaScript -->
+<script src="script.js"></script>
 </body>
 </html>
