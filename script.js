@@ -8,7 +8,7 @@
 // ---------------------------------------------------------
 // 1. FALLBACK PLAYER DATA
 // Used only if Supabase cannot load the players.
-// Legacy GW6 reference points are retained here but are never shown as GW7 points.
+// Legacy GW6 reference points are retained here but are never shown as current points.
 // ---------------------------------------------------------
 
 const fallbackRoster = [
@@ -48,8 +48,8 @@ let activeSearch = "";
 let currentMatches = [];
 let playersLoadedFromDatabase = false;
 let matchesLoadedFromDatabase = false;
-let gw7PointsLoaded = false;
-const gw7PointsByPlayerId = new Map();
+let gw8PointsLoaded = false;
+const gw8PointsByPlayerId = new Map();
 
 const STATUS_ORDER = {
     SAFE: 0,
@@ -124,14 +124,14 @@ function getReferencePoints(player) {
     return Number.isFinite(points) ? points : 0;
 }
 
-function getGW7Points(player) {
-    const points = gw7PointsByPlayerId.get(String(player.id));
+function getGW8Points(player) {
+    const points = gw8PointsByPlayerId.get(String(player.id));
 
     return Number.isFinite(points) ? points : null;
 }
 
-function formatGW7Points(player) {
-    const points = getGW7Points(player);
+function formatGW8Points(player) {
+    const points = getGW8Points(player);
 
     return points === null ? "—" : String(points);
 }
@@ -183,8 +183,8 @@ function publishDebugState() {
     window.matchesLoadedFromDatabase = matchesLoadedFromDatabase;
     window.activeStatusFilter = activeStatusFilter;
     window.activeSearch = activeSearch;
-    window.gw7PointsLoaded = gw7PointsLoaded;
-    window.gw7PointsByPlayerId = Object.fromEntries(gw7PointsByPlayerId);
+    window.gw8PointsLoaded = gw8PointsLoaded;
+    window.gw8PointsByPlayerId = Object.fromEntries(gw8PointsByPlayerId);
 }
 
 // ---------------------------------------------------------
@@ -229,7 +229,7 @@ async function loadPlayersFromSupabase() {
                 0,
                 Math.min(3, Number(player.hearts ?? fallback?.hearts ?? 3))
             ),
-            // Legacy reference points; GW7 scores load separately from matches.
+            // Legacy reference points; GW8 scores load separately from matches.
             points: fallback ? fallback.points : 0
         };
     });
@@ -248,22 +248,22 @@ async function loadPlayersFromSupabase() {
     return true;
 }
 
-async function loadGW7PointsFromSupabase() {
+async function loadGW8PointsFromSupabase() {
     const client = window.supabaseClient;
 
     if (!client) {
-        console.warn("Supabase client is unavailable. GW7 points cannot be loaded.");
+        console.warn("Supabase client is unavailable. GW8 points cannot be loaded.");
         return false;
     }
 
     const { data, error } = await client
         .from("matches")
         .select("id, player_a_id, player_b_id, points_a, points_b, status")
-        .eq("gameweek_id", 5)
+        .eq("gameweek_id", 6)
         .order("id", { ascending: true });
 
     if (error) {
-        console.error("Could not load GW7 points:", error.message);
+        console.error("Could not load GW8 points:", error.message);
         return false;
     }
 
@@ -305,7 +305,7 @@ async function loadGW7PointsFromSupabase() {
         [...scores.keys()].every(playerId => rosterIds.includes(playerId));
 
     if (!complete) {
-        console.warn("GW7 points are incomplete; standings points remain unavailable.", {
+        console.warn("GW8 points are incomplete; standings points remain unavailable.", {
             matches: matches.length,
             mappedScores: scores.size,
             rosterSize: rosterIds.length
@@ -313,23 +313,23 @@ async function loadGW7PointsFromSupabase() {
         return false;
     }
 
-    gw7PointsByPlayerId.clear();
-    scores.forEach((points, playerId) => gw7PointsByPlayerId.set(playerId, points));
-    gw7PointsLoaded = true;
+    gw8PointsByPlayerId.clear();
+    scores.forEach((points, playerId) => gw8PointsByPlayerId.set(playerId, points));
+    gw8PointsLoaded = true;
 
     publishDebugState();
-    console.log(`GW7 points loaded for ${scores.size} players from ${matches.length} completed matches.`);
+    console.log(`GW8 points loaded for ${scores.size} players from ${matches.length} completed matches.`);
 
     return true;
 }
 
-function syncGW7PointsNote() {
+function syncGW8PointsNote() {
     const note = document.getElementById("standingsPointsNote");
     if (!note) return;
 
-    note.textContent = gw7PointsLoaded
-        ? "Survivors are grouped SAFE → NORMAL → DANGER. Points are verified GW7 scores from the 12 completed matches. GW8 scores remain pending."
-        : "Survivors are grouped SAFE → NORMAL → DANGER. GW7 scores are currently unavailable. GW8 scores remain pending.";
+    note.textContent = gw8PointsLoaded
+        ? "Survivors are grouped SAFE → NORMAL → DANGER. Points are verified GW8 scores from the 12 completed matches."
+        : "Survivors are grouped SAFE → NORMAL → DANGER. GW8 scores are currently unavailable.";
 }
 
 // ---------------------------------------------------------
@@ -375,8 +375,8 @@ function renderStandings(players = roster) {
                 <td class="cell-state" data-label="Current state">
                     <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
                 </td>
-                <td class="cell-points" data-label="GW7 points">
-                    <strong>${formatGW7Points(player)}</strong>
+                <td class="cell-points" data-label="GW8 points">
+                    <strong>${formatGW8Points(player)}</strong>
                     <span class="unit">PTS</span>
                 </td>
                 <td class="cell-hearts" data-label="Hearts">
@@ -435,7 +435,7 @@ function renderSurvivorCards(players = roster) {
                     <span class="survivor-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
                     <div class="survivor-id">
                         <h3 class="survivor-name">${escapeHTML(player.name)}</h3>
-                        <p class="survivor-points"><strong>${formatGW7Points(player)}</strong> GW7 PTS</p>
+                        <p class="survivor-points"><strong>${formatGW8Points(player)}</strong> GW8 PTS</p>
                     </div>
                 </div>
                 <div class="survivor-vitals">
@@ -681,6 +681,28 @@ function renderMatchCard(match, number = 0, type = "other") {
         : `MATCH #${escapeHTML(match.id)}`;
     const status = String(match.status || "PENDING").trim().toUpperCase();
     const statusClass = status.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "pending";
+    const pointsA = Number(match.points_a);
+    const pointsB = Number(match.points_b);
+    const bothScored =
+        match.points_a !== null && match.points_a !== undefined && match.points_a !== "" &&
+        match.points_b !== null && match.points_b !== undefined && match.points_b !== "";
+    const isCompleted = status === "COMPLETED";
+    let winnerId = match.winner_id === null || match.winner_id === undefined
+        ? null
+        : String(match.winner_id);
+
+    if (
+        !winnerId &&
+        isCompleted &&
+        bothScored &&
+        Number.isFinite(pointsA) &&
+        Number.isFinite(pointsB) &&
+        pointsA !== pointsB
+    ) {
+        winnerId = pointsA > pointsB
+            ? String(match.player_a_id)
+            : String(match.player_b_id);
+    }
 
     if (!playerA || !playerB) {
         console.warn("Missing player for match:", match.id, {
@@ -707,12 +729,20 @@ function renderMatchCard(match, number = 0, type = "other") {
         const displayState = getDisplayState(player);
         const stateClass = getStateClass(player);
         const formattedPoints = formatMatchPoints(points);
+        const result = isCompleted && winnerId
+            ? (String(player.id) === winnerId ? "winner" : "loser")
+            : "";
+        const resultClass = result ? `is-${result}` : "";
+        const resultTag = result
+            ? `<span class="match-result-tag ${result}">${result === "winner" ? "WINNER" : "LOSER"}</span>`
+            : "";
 
         return `
-            <div class="match-player state-${stateClass}" data-player-id="${escapeHTML(player.id)}">
+            <div class="match-player state-${stateClass} ${resultClass}" data-player-id="${escapeHTML(player.id)}">
                 <span class="match-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
                 <strong class="match-name" title="${escapeHTML(player.name)}">${escapeHTML(player.name)}</strong>
                 <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
+                ${resultTag}
                 <div class="match-vitals">
                     <span class="match-hearts" role="img" aria-label="${hearts} of 3 hearts remaining">
                         ${renderHeartMarks(hearts)}
@@ -727,7 +757,7 @@ function renderMatchCard(match, number = 0, type = "other") {
     }
 
     return `
-        <article class="match-card match-card--${type}" data-match-id="${escapeHTML(match.id)}">
+        <article class="match-card match-card--${type}" data-match-id="${escapeHTML(match.id)}" data-winner-id="${escapeHTML(winnerId || "")}">
             <div class="match-card-head">
                 <span class="match-number">${matchNumber}</span>
                 <span class="match-badge ${statusClass}">${escapeHTML(status)}</span>
@@ -929,8 +959,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     initPlayerSearch();
 
     await loadPlayersFromSupabase();
-    await loadGW7PointsFromSupabase();
-    syncGW7PointsNote();
+    await loadGW8PointsFromSupabase();
+    syncGW8PointsNote();
 
     renderStandings();
     renderSurvivorCards();
