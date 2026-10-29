@@ -40,7 +40,7 @@
                 <button class="nav-btn active" aria-current="page" onclick="switchTab('home')">OVERVIEW</button>
                 <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS</button>
                 <button class="nav-btn" onclick="switchTab('community')">COMMUNITY</button>
-                <button class="nav-btn" onclick="switchTab('leaderboard')">GW7 STANDINGS</button>
+                <button class="nav-btn" onclick="switchTab('leaderboard')">GW8 STANDINGS</button>
                 <button class="nav-btn" onclick="switchTab('matchups')">GW8 MATCHES</button>
                 <button class="nav-btn" onclick="switchTab('rules')">RULES & LORE</button>
             </nav>
@@ -52,25 +52,25 @@
         <section class="hero-section">
             <div class="container text-center">
                 <div class="outbreak-banner">
-                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW7 UPDATE • GAMEWEEK 8 IS LIVE
+                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW8 UPDATE • CHAPTER I COMPLETE
                 </div>
                 <h1 class="main-title">ENDURE AND <span class="green-glow">SURVIVE</span></h1>
                 <p class="hero-lead">
-                    The GW7 standings and all 12 GW8 matchups are live. Track every survivor, every heart, and every battle across the Quarantine Zone.
+                    The final GW8 standings and all 12 GW8 results are live. Track every survivor, every heart, and every battle across the Quarantine Zone.
                 </p>
 
                 <div class="stats-hub">
                     <div class="stat-card safe-border">
-                        <span class="stat-num" data-stat="safe">8</span>
-                        <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(33%)</span></span>
+                        <span class="stat-num" data-stat="safe">10</span>
+                        <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(42%)</span></span>
                     </div>
                     <div class="stat-card normal-border">
-                        <span class="stat-num" data-stat="normal">8</span>
-                        <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(33%)</span></span>
+                        <span class="stat-num" data-stat="normal">4</span>
+                        <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(17%)</span></span>
                     </div>
                     <div class="stat-card danger-border">
-                        <span class="stat-num" data-stat="danger">8</span>
-                        <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(33%)</span></span>
+                        <span class="stat-num" data-stat="danger">10</span>
+                        <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(42%)</span></span>
                     </div>
                     <div class="stat-card elim-border">
                         <span class="stat-num" data-stat="eliminated">0</span>
@@ -79,7 +79,7 @@
                 </div>
 
                 <div class="cta-actions">
-                    <button class="btn btn-main" onclick="switchTab('leaderboard')">VIEW GW7 STANDINGS</button>
+                    <button class="btn btn-main" onclick="switchTab('leaderboard')">VIEW GW8 STANDINGS</button>
                     <button class="btn btn-outline" onclick="switchTab('matchups')">EXPLORE GW8 MATCHUPS</button>
                 </div>
 
@@ -90,7 +90,7 @@
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Phase</span>
-                        <span class="telemetry-val">GW8 In Progress</span>
+                        <span class="telemetry-val">GW8 Complete</span>
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Survivors</span>
@@ -121,7 +121,7 @@
 
             <div class="journey-board" aria-label="Chapter journey overview">
                 <div class="journey-stat" data-journey="completed">
-                    <span class="journey-num" id="journeyCompleted">01</span>
+                    <span class="journey-num" id="journeyCompleted">02</span>
                     <span class="journey-lbl">Completed</span>
                 </div>
                 <div class="journey-stat" data-journey="active">
@@ -129,7 +129,7 @@
                     <span class="journey-lbl">Active Sector</span>
                 </div>
                 <div class="journey-stat" data-journey="locked">
-                    <span class="journey-num" id="journeyLocked">06</span>
+                    <span class="journey-num" id="journeyLocked">05</span>
                     <span class="journey-lbl">Sealed Ahead</span>
                 </div>
                 <div class="journey-route">
@@ -154,9 +154,9 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row active-now" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
+                <div class="chapter-row completed" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
                     <div class="chapter-content-wrapper">
-                        <div class="chap-status-badge active-tag">CURRENT (GW8)</div>
+                        <div class="chap-status-badge">COMPLETED</div>
                         <div class="chap-info">
                             <h3>🏙️ Chapter I — QUARANTINE ZONE</h3>
                             <span class="chap-span">GW4 — GW8</span>
@@ -169,9 +169,9 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-2-the-infection.jpg');">
+                <div class="chapter-row active-now" style="--chapter-art: url('assets/illustrations/chapter-2-the-infection.jpg');">
                     <div class="chapter-content-wrapper">
-                        <div class="chap-status-badge lock-tag">LOCKED</div>
+                        <div class="chap-status-badge active-tag">UP NEXT</div>
                         <div class="chap-info">
                             <h3>☣️ Chapter II — THE INFECTION</h3>
                             <span class="chap-span">GW9 — GW14</span>
@@ -304,15 +304,15 @@
         <div class="container">
             <div class="page-title-bar">
                 <div class="page-title-block">
-                    <span class="page-kicker">Registry // GW7 Results</span>
-                    <h2>GW7 STANDINGS &amp; STATUS</h2>
-                    <p class="page-title-note">Field order by current state • GW8 in progress</p>
+                    <span class="page-kicker">Registry // GW8 Results</span>
+                    <h2>GW8 STANDINGS &amp; STATUS</h2>
+                    <p class="page-title-note">Field order by current state • Chapter I complete</p>
                 </div>
                 <div class="filter-group">
                     <button class="f-btn active" data-filter="ALL" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (24)</button>
-                    <button class="f-btn" data-filter="SAFE" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (8)</button>
-                    <button class="f-btn" data-filter="NORMAL" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (8)</button>
-                    <button class="f-btn" data-filter="DANGER" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (8)</button>
+                    <button class="f-btn" data-filter="SAFE" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (10)</button>
+                    <button class="f-btn" data-filter="NORMAL" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (4)</button>
+                    <button class="f-btn" data-filter="DANGER" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (10)</button>
                 </div>
             </div>
 
@@ -329,14 +329,14 @@
                 <span class="search-hint" id="searchHint">Live results</span>
             </div>
 
-            <div class="glass-table-wrapper" role="region" aria-label="GW7 standings — verified match points" tabindex="0">
+            <div class="glass-table-wrapper" role="region" aria-label="GW8 standings — verified match points" tabindex="0">
                 <table class="survival-table">
                     <thead>
                         <tr>
                             <th scope="col">Rank</th>
                             <th scope="col">Participant</th>
                             <th scope="col">Current State</th>
-                            <th scope="col">GW7 Pts</th>
+                            <th scope="col">GW8 Pts</th>
                             <th scope="col">Hearts</th>
                             <th scope="col">Threat</th>
                         </tr>
@@ -345,13 +345,13 @@
                 </table>
             </div>
             <p class="standings-note" id="standingsPointsNote">
-                Survivors are grouped SAFE → NORMAL → DANGER. GW7 points load from the completed matches; GW8 scores remain pending.
+                Survivors are grouped SAFE → NORMAL → DANGER. Points are verified GW8 scores from the 12 completed matches.
             </p>
 
             <section class="survivor-dossier" aria-labelledby="survivorDossierTitle">
                 <div class="dossier-head">
                     <div>
-                        <span class="dossier-kicker">Field Registry // GW7</span>
+                        <span class="dossier-kicker">Field Registry // GW8</span>
                         <h3 class="dossier-title" id="survivorDossierTitle">SURVIVOR DOSSIER</h3>
                     </div>
                     <p class="dossier-count" id="survivorDossierCount" aria-live="polite">24 SURVIVORS DISPLAYED</p>
@@ -372,7 +372,7 @@
                 <span class="legend-item"><span class="legend-dot safe" aria-hidden="true"></span>SAFE</span>
                 <span class="legend-item"><span class="legend-dot normal" aria-hidden="true"></span>NORMAL</span>
                 <span class="legend-item"><span class="legend-dot danger" aria-hidden="true"></span>DANGER</span>
-                <span class="legend-note">GW8 scores pending</span>
+                <span class="legend-note">GW8 results final</span>
             </div>
 
             <div class="groups-layout">
