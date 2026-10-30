@@ -51,6 +51,30 @@ let matchesLoadedFromDatabase = false;
 let gw8PointsLoaded = false;
 const gw8PointsByPlayerId = new Map();
 
+// Manually curated infected list. Never derived from DANGER state or hearts.
+const INFECTED_ROSTER = ["Wld Lhaj", "Abdellah Moghtanim", "Abdelghafour", "Fatima"];
+
+// Display-only heart overrides for MATCHES and STANDINGS; nothing is written to the database.
+const HEARTS_DISPLAY_OVERRIDES = {
+    [normalizePlayerName("Moulchi")]: 3
+};
+
+// GW9 official pairings, rendered locally; no results exist yet.
+const GW9_MATCHUPS = [
+    ["Islam", "Wld Lhaj"],
+    ["Zakaria", "Abdellah Moghtanim"],
+    ["Meryem", "Ahmed"],
+    ["Ismail Hadrani", "Abdelghafour"],
+    ["Youness Oukhiya", "Fatima"],
+    ["Nezar", "Arbi"],
+    ["Saad", "Yougito"],
+    ["Adnane", "Ayoub"],
+    ["Abdel Chipi", "Adnane Elkhamayry"],
+    ["Abdennour", "Nexus"],
+    ["Ayman", "Moulchi"],
+    ["Ayoub Abouzar", "Anas"]
+];
+
 const STATUS_ORDER = {
     SAFE: 0,
     NORMAL: 1,
@@ -84,6 +108,12 @@ function getPlayerHearts(player) {
     return Math.max(0, Math.min(3, Number(player.hearts) || 0));
 }
 
+function getDisplayHearts(player) {
+    const override = HEARTS_DISPLAY_OVERRIDES[normalizePlayerName(player?.name)];
+
+    return Number.isFinite(override) ? override : getPlayerHearts(player);
+}
+
 function isEliminated(player) {
     return getPlayerHearts(player) <= 0;
 }
@@ -96,6 +126,16 @@ function getDisplayState(player) {
 
 function getStateClass(player) {
     return getDisplayState(player).toLowerCase();
+}
+
+function normalizePlayerName(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+function isInfectedPlayer(player) {
+    const name = normalizePlayerName(player?.name);
+
+    return name !== "" && INFECTED_ROSTER.some(entry => normalizePlayerName(entry) === name);
 }
 
 function getThreatStatus(player) {
@@ -359,18 +399,19 @@ function renderStandings(players = roster) {
     }
 
     container.innerHTML = sortedPlayers.map(player => {
-        const hearts = getPlayerHearts(player);
+        const hearts = getDisplayHearts(player);
         const displayState = getDisplayState(player);
         const stateClass = getStateClass(player);
         const threat = getThreatStatus(player);
         const threatTone = getThreatTone(player);
         const rank = rankById.get(String(player.id)) || 0;
+        const infected = isInfectedPlayer(player);
 
         return `
-            <tr class="row-${stateClass}" data-player-id="${escapeHTML(player.id)}">
+            <tr class="row-${stateClass}${infected ? " row-infected" : ""}" data-player-id="${escapeHTML(player.id)}">
                 <td class="cell-rank" data-label="Rank">${String(rank).padStart(2, "0")}</td>
                 <td class="cell-player" data-label="Participant">
-                    <strong class="player-name">${escapeHTML(player.name)}</strong>
+                    <strong class="player-name">${escapeHTML(player.name)}</strong>${infected ? '<span class="status infected c2-infected-tag">INFECTED</span>' : ""}
                 </td>
                 <td class="cell-state" data-label="Current state">
                     <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
@@ -415,7 +456,7 @@ function renderSurvivorCards(players = roster) {
     }
 
     container.innerHTML = sortedPlayers.map(player => {
-        const hearts = getPlayerHearts(player);
+        const hearts = getDisplayHearts(player);
         const displayState = getDisplayState(player);
         const stateClass = getStateClass(player);
         const threat = getThreatStatus(player);
@@ -424,11 +465,13 @@ function renderSurvivorCards(players = roster) {
         const threatLabel = threat === "ELIMINATED"
             ? "ELIMINATED"
             : `${threat} THREAT`;
+        const infected = isInfectedPlayer(player);
 
         return `
-            <article class="survivor-card ${stateClass}" data-player-id="${escapeHTML(player.id)}" data-state="${stateClass}">
+            <article class="survivor-card ${stateClass}${infected ? " c2-infected" : ""}" data-player-id="${escapeHTML(player.id)}" data-state="${stateClass}">
                 <div class="survivor-top">
                     <span class="survivor-rank">#${String(rank).padStart(2, "0")}</span>
+                    ${infected ? '<span class="status infected c2-infected-tag">INFECTED</span>' : ""}
                     <span class="survivor-state">${escapeHTML(displayState)}</span>
                 </div>
                 <div class="survivor-identity">
@@ -448,6 +491,79 @@ function renderSurvivorCards(players = roster) {
                     <span class="threat-dot" aria-hidden="true"></span>
                     ${escapeHTML(threatLabel)}
                 </div>
+            </article>
+        `;
+    }).join("");
+}
+
+function renderInfected() {
+    const container = document.getElementById("infectedDossier");
+    const totalElement = document.getElementById("infectedTotal");
+
+    if (totalElement) {
+        totalElement.textContent = String(INFECTED_ROSTER.length).padStart(2, "0");
+    }
+
+    if (!container) return;
+
+    const cases = INFECTED_ROSTER
+        .map(name => roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(name)))
+        .filter(Boolean);
+
+    if (cases.length === 0) {
+        container.innerHTML = `
+            <div class="c2-infected-empty">
+                <span class="c2-label">No case files</span>
+                <p>The player registry is not available yet. The confirmed infected list is unchanged.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = cases.map((player, index) => {
+        const hearts = getPlayerHearts(player);
+        const displayState = getDisplayState(player);
+        const stateClass = getStateClass(player);
+        const threat = getThreatStatus(player);
+
+        return `
+            <article class="c2-infected-card" data-player-id="${escapeHTML(player.id)}">
+                <header class="c2-infected-card-head">
+                    <span class="c2-file-no">Case File ${String(index + 1).padStart(2, "0")}</span>
+                    <span class="status infected">Infected</span>
+                </header>
+                <div class="c2-infected-identity">
+                    <span class="c2-infected-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
+                    <div>
+                        <h3 class="c2-infected-name">${escapeHTML(player.name)}</h3>
+                        <span class="c2-infected-sub">Confirmed Case // Sector 02</span>
+                    </div>
+                </div>
+                <dl class="c2-infected-data">
+                    <div class="c2-infected-row">
+                        <dt>Current State</dt>
+                        <dd><span class="status ${stateClass}">${escapeHTML(displayState)}</span></dd>
+                    </div>
+                    <div class="c2-infected-row">
+                        <dt>Hearts</dt>
+                        <dd>
+                            <span class="hearts" role="img" aria-label="${hearts} of 3 hearts remaining">${renderHeartMarks(hearts)}</span>
+                            <span class="heart-count">${hearts}/3</span>
+                        </dd>
+                    </div>
+                    <div class="c2-infected-row">
+                        <dt>GW8 Points</dt>
+                        <dd><strong class="c2-infected-pts">${formatGW8Points(player)}</strong><span class="unit">PTS</span></dd>
+                    </div>
+                    <div class="c2-infected-row">
+                        <dt>Threat</dt>
+                        <dd><span class="threat-box ${getThreatTone(player)}"><span class="threat-dot" aria-hidden="true"></span>${escapeHTML(threat)}</span></dd>
+                    </div>
+                </dl>
+                <footer class="c2-infected-card-foot">
+                    <span>Registry // Manual</span>
+                    <span>Confirmed</span>
+                </footer>
             </article>
         `;
     }).join("");
@@ -725,7 +841,7 @@ function renderMatchCard(match, number = 0, type = "other") {
     }
 
     function playerMarkup(player, points) {
-        const hearts = getPlayerHearts(player);
+        const hearts = getDisplayHearts(player);
         const displayState = getDisplayState(player);
         const stateClass = getStateClass(player);
         const formattedPoints = formatMatchPoints(points);
@@ -742,6 +858,7 @@ function renderMatchCard(match, number = 0, type = "other") {
                 <span class="match-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
                 <strong class="match-name" title="${escapeHTML(player.name)}">${escapeHTML(player.name)}</strong>
                 <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
+                ${isInfectedPlayer(player) ? '<span class="match-infected" role="img" aria-label="Infected">🦠 INFECTED</span>' : ""}
                 ${resultTag}
                 <div class="match-vitals">
                     <span class="match-hearts" role="img" aria-label="${hearts} of 3 hearts remaining">
@@ -749,7 +866,7 @@ function renderMatchCard(match, number = 0, type = "other") {
                     </span>
                     <span class="match-points ${formattedPoints.pending ? "is-pending" : ""}">
                         <strong>${escapeHTML(formattedPoints.value)}</strong>
-                        <small>GW8 PTS</small>
+                        <small>GW9 PTS</small>
                     </span>
                 </div>
             </div>
@@ -772,11 +889,29 @@ function renderMatchCard(match, number = 0, type = "other") {
 }
 
 // ---------------------------------------------------------
-// 7. LOAD AND CLASSIFY GW8 MATCHES
+// 7. GW9 MATCHUPS — LOCAL FIXTURES
+// GW9 results do not exist yet, so pairings are rendered from the
+// curated fixture list above instead of the completed GW8 match rows.
 // ---------------------------------------------------------
 
 async function loadGW8Matches() {
     return renderMatchups();
+}
+
+function buildGW9Matches() {
+    return GW9_MATCHUPS.map(([nameA, nameB], index) => {
+        const playerA = roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(nameA));
+        const playerB = roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(nameB));
+
+        return {
+            id: `gw9-${String(index + 1).padStart(2, "0")}`,
+            player_a_id: playerA ? playerA.id : null,
+            player_b_id: playerB ? playerB.id : null,
+            points_a: null,
+            points_b: null,
+            status: "PENDING"
+        };
+    });
 }
 
 async function renderMatchups() {
@@ -784,53 +919,12 @@ async function renderMatchups() {
     const groupB = document.getElementById("groupB-list");
 
     if (!groupA && !groupB) {
-        console.warn("GW8 containers not found in index.html.");
+        console.warn("Matchup containers not found in index.html.");
         return;
     }
 
-    const client = window.supabaseClient;
-
-    if (!client) {
-        const message = "Supabase is not connected. GW8 matchups cannot be loaded.";
-        if (groupA) {
-            groupA.innerHTML = `<div class="group-message group-message--error" role="alert">${message}</div>`;
-        }
-        if (groupB) groupB.innerHTML = "";
-        return;
-    }
-
-    if (groupA) {
-        groupA.setAttribute("aria-busy", "true");
-        groupA.innerHTML = `<div class="group-message" role="status">Retrieving GW8 pairings…</div>`;
-    }
-    if (groupB) {
-        groupB.setAttribute("aria-busy", "true");
-        groupB.innerHTML = "";
-    }
-
-    const { data, error } = await client
-        .from("matches")
-        .select("*")
-        .eq("gameweek_id", 6)
-        .order("id", { ascending: true });
-
-    if (error) {
-        console.error("Could not load GW8 matches:", error.message);
-
-        if (groupA) {
-            groupA.innerHTML = `<div class="group-message group-message--error" role="alert">Could not load GW8 matches: ${escapeHTML(error.message)}</div>`;
-        }
-        if (groupB) groupB.innerHTML = "";
-        if (groupA) groupA.removeAttribute("aria-busy");
-        if (groupB) groupB.removeAttribute("aria-busy");
-
-        currentMatches = [];
-        publishDebugState();
-        return;
-    }
-
-    currentMatches = data || [];
-    matchesLoadedFromDatabase = true;
+    currentMatches = buildGW9Matches();
+    matchesLoadedFromDatabase = false;
 
     const matchNumbers = new Map(
         currentMatches.map((match, index) => [String(match.id), index + 1])
@@ -906,7 +1000,7 @@ async function renderMatchups() {
             ? safeVsDanger.map(match =>
                 renderMatchCard(match, matchNumbers.get(String(match.id)), "sd")
             ).join("")
-            : `<div class="group-message">No SAFE vs DANGER pairings are listed for GW8.</div>`;
+            : `<div class="group-message">No SAFE vs DANGER pairings are listed for GW9.</div>`;
         groupA.removeAttribute("aria-busy");
     }
 
@@ -915,7 +1009,7 @@ async function renderMatchups() {
             ? normalVsNormal.map(match =>
                 renderMatchCard(match, matchNumbers.get(String(match.id)), "nn")
             ).join("")
-            : `<div class="group-message">No NORMAL vs NORMAL pairings are listed for GW8.</div>`;
+            : `<div class="group-message">No NORMAL vs NORMAL pairings are listed for GW9.</div>`;
 
         if (otherMatches.length) {
             const extra = document.createElement("div");
@@ -939,7 +1033,7 @@ async function renderMatchups() {
         summary.textContent = `Quarantine Zone Battles — ${safeVsDanger.length} SAFE vs DANGER • ${normalVsNormal.length} NORMAL vs NORMAL • ${currentMatches.length} Matches`;
     }
 
-    console.log("GW8 classification:", {
+    console.log("GW9 classification:", {
         total: currentMatches.length,
         safeVsDanger: safeVsDanger.length,
         normalVsNormal: normalVsNormal.length,
@@ -964,6 +1058,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     renderStandings();
     renderSurvivorCards();
+    renderInfected();
     syncJourneyLedger();
 
     await loadGW8Matches();
