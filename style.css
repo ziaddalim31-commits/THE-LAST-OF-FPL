@@ -4337,6 +4337,42 @@ footer p::before {
     color: var(--faint);
 }
 
+.match-player.is-winner .match-avatar {
+    border-color: rgba(106, 179, 216, 0.55);
+    box-shadow:
+        inset 0 0 14px rgba(0, 0, 0, 0.45),
+        0 0 16px rgba(106, 179, 216, 0.22);
+}
+
+.match-player.is-loser {
+    opacity: 0.62;
+}
+
+.match-result-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    font-family: var(--font-ui);
+    font-size: 0.46rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.match-result-tag.winner {
+    border-color: var(--safe-line);
+    background: var(--safe-soft);
+    color: var(--safe);
+}
+
+.match-result-tag.loser {
+    border-color: rgba(233, 228, 215, 0.16);
+    background: rgba(233, 228, 215, 0.03);
+    color: var(--faint);
+}
+
 .match-vs {
     position: relative;
     align-self: center;
@@ -4628,5 +4664,465 @@ footer p::before {
 
     .match-points small {
         font-size: 0.4rem;
+    }
+}
+
+/* =========================================================================
+   THE LAST OF FPL — CHAPTER II : THE INFECTION
+   Additive visual layer appended at the very end of style.css.
+   Adds: infection tokens, contamination atmosphere, active-chapter emphasis,
+   containment framing, match-surface detailing and dormant INFECTED hooks.
+   No existing declaration is edited, replaced or removed.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1. Infection tokens
+   ------------------------------------------------------------------------- */
+
+:root {
+    --inf-moss: #8d9d63;
+    --inf-moss-bright: #c3d494;
+    --inf-moss-dim: #5c6a41;
+    --inf-moss-rgb: 141, 157, 99;
+    --inf-spore-rgb: 195, 212, 148;
+    --inf-rust-rgb: 116, 51, 37;
+    --inf-line: rgba(141, 157, 99, 0.3);
+    --inf-line-soft: rgba(141, 157, 99, 0.16);
+    --inf-glow: rgba(141, 157, 99, 0.22);
+}
+
+/* -------------------------------------------------------------------------
+   2. Contamination atmosphere
+   Static gradient layers only: no filters, no backdrop blur, no animation.
+   ------------------------------------------------------------------------- */
+
+body.apocalypse-theme::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 6% 10%, rgba(var(--inf-moss-rgb), 0.14), transparent 44%),
+        radial-gradient(ellipse at 94% 4%, rgba(var(--inf-rust-rgb), 0.16), transparent 40%),
+        radial-gradient(ellipse at 82% 90%, rgba(var(--inf-moss-rgb), 0.11), transparent 48%),
+        radial-gradient(ellipse at 50% 58%, transparent 50%, rgba(4, 6, 3, 0.5) 100%);
+}
+
+body.apocalypse-theme::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.6;
+    background-image:
+        radial-gradient(circle at 12% 18%, rgba(var(--inf-spore-rgb), 0.55) 0 1.2px, transparent 1.9px),
+        radial-gradient(circle at 63% 7%, rgba(var(--inf-spore-rgb), 0.42) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 87% 33%, rgba(var(--inf-spore-rgb), 0.36) 0 1.4px, transparent 2.1px),
+        radial-gradient(circle at 34% 61%, rgba(var(--inf-spore-rgb), 0.44) 0 1.1px, transparent 1.7px),
+        radial-gradient(circle at 71% 78%, rgba(var(--inf-spore-rgb), 0.3) 0 1.5px, transparent 2.2px),
+        radial-gradient(circle at 19% 88%, rgba(var(--inf-spore-rgb), 0.38) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 47% 29%, rgba(var(--inf-spore-rgb), 0.2) 0 2.2px, transparent 3.2px);
+    background-size:
+        430px 430px,
+        520px 520px,
+        360px 360px,
+        470px 470px,
+        560px 560px,
+        400px 400px,
+        640px 640px;
+    background-position:
+        0 0,
+        130px 70px,
+        40px 210px,
+        265px 0,
+        95px 150px,
+        305px 285px,
+        0 0;
+}
+
+.navbar {
+    border-bottom-color: rgba(var(--inf-moss-rgb), 0.18);
+}
+
+.hero-telemetry {
+    border-top-color: rgba(var(--inf-moss-rgb), 0.18);
+}
+
+/* -------------------------------------------------------------------------
+   3. Chapter II — THE INFECTION emphasis
+   The active chapter row is the only chapter whose tint is rewritten;
+   completed, locked and final chapters keep their existing identity.
+   ------------------------------------------------------------------------- */
+
+.chapter-row.active-now {
+    --tint: var(--inf-moss-rgb);
+    border-color: rgba(var(--inf-moss-rgb), 0.36);
+    border-left-color: var(--inf-moss-bright);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.52),
+        0 0 48px rgba(var(--inf-moss-rgb), 0.12),
+        0 0 92px rgba(var(--inf-rust-rgb), 0.12);
+}
+
+.chapter-row.active-now::after {
+    background:
+        linear-gradient(180deg, rgba(var(--inf-moss-rgb), 0.06), rgba(5, 6, 4, 0.28)),
+        repeating-linear-gradient(135deg, transparent 0 26px, rgba(var(--inf-moss-rgb), 0.015) 26px 27px);
+}
+
+.chapter-row.active-now .chapter-content-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: -16% -10% -20% -12%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 10% 24%, rgba(var(--inf-moss-rgb), 0.17), transparent 46%),
+        radial-gradient(ellipse at 86% 84%, rgba(var(--inf-rust-rgb), 0.2), transparent 54%),
+        radial-gradient(ellipse at 54% 6%, rgba(var(--inf-spore-rgb), 0.07), transparent 38%);
+}
+
+.chapter-row.active-now .chap-info h3 {
+    text-shadow: 0 0 34px rgba(var(--inf-moss-rgb), 0.3), 0 2px 16px rgba(0, 0, 0, 0.7);
+}
+
+.chapter-row.active-now .chap-span {
+    border-color: rgba(var(--inf-moss-rgb), 0.32);
+    background: rgba(var(--inf-moss-rgb), 0.08);
+    color: var(--inf-moss-bright);
+}
+
+.chapter-row.active-now .chapter-visual::after {
+    background-image:
+        radial-gradient(ellipse at 76% 86%, rgba(var(--inf-moss-rgb), 0.5), transparent 62%),
+        radial-gradient(ellipse at 16% 14%, rgba(var(--inf-rust-rgb), 0.36), transparent 58%),
+        var(--noise);
+    background-size: auto, auto, 180px 180px;
+    mix-blend-mode: soft-light;
+    opacity: 0.9;
+}
+
+.chapter-row.active-now .chapter-visual-tag {
+    color: #eef2dd;
+}
+
+.chapter-row.active-now .chapter-visual-tag::before {
+    background: linear-gradient(90deg, var(--inf-moss-bright), rgba(var(--inf-moss-rgb), 0.15));
+    box-shadow: 0 0 10px rgba(var(--inf-moss-rgb), 0.55);
+}
+
+.chap-status-badge.active-tag {
+    border-color: rgba(var(--inf-moss-rgb), 0.55);
+    background:
+        repeating-linear-gradient(135deg, rgba(5, 6, 4, 0.55) 0 9px, rgba(6, 8, 4, 0.14) 9px 18px),
+        linear-gradient(135deg, rgba(var(--inf-moss-rgb), 0.42), rgba(var(--inf-rust-rgb), 0.62));
+    color: #f7f8ee;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+.chap-status-badge.active-tag::before {
+    border-radius: 50%;
+    background: var(--inf-spore-rgb);
+    box-shadow: 0 0 9px rgba(var(--inf-spore-rgb), 0.9), 0 0 18px rgba(var(--inf-moss-rgb), 0.5);
+}
+
+@media (hover: hover) {
+    .chapter-row.active-now:hover {
+        border-color: rgba(var(--inf-moss-rgb), 0.6);
+    }
+}
+
+.journey-board {
+    border-left-color: rgba(var(--inf-moss-rgb), 0.65);
+}
+
+.journey-board::before {
+    background: linear-gradient(90deg, var(--inf-moss-bright), rgba(var(--inf-rust-rgb), 0.55) 38%, transparent 62%);
+    opacity: 0.7;
+}
+
+.journey-stat[data-journey="active"] {
+    background: linear-gradient(180deg, rgba(var(--inf-moss-rgb), 0.14), rgba(var(--inf-moss-rgb), 0.02));
+}
+
+.journey-stat[data-journey="active"] .journey-num {
+    color: var(--inf-moss-bright);
+    text-shadow: 0 0 22px rgba(var(--inf-moss-rgb), 0.4);
+}
+
+.journey-stat[data-journey="active"]::after {
+    background: var(--inf-moss-bright);
+}
+
+/* -------------------------------------------------------------------------
+   4. Headings and section markers
+   ------------------------------------------------------------------------- */
+
+.page-kicker {
+    color: var(--inf-moss-bright);
+}
+
+.page-kicker::before {
+    background: linear-gradient(90deg, var(--inf-moss-bright), var(--accent-bright));
+    box-shadow: 0 0 10px rgba(var(--inf-moss-rgb), 0.4);
+}
+
+.section-heading {
+    text-shadow: 0 0 38px rgba(var(--inf-moss-rgb), 0.16), 0 2px 18px rgba(0, 0, 0, 0.72);
+}
+
+.section-heading::after {
+    width: 104px;
+    background: linear-gradient(90deg, var(--inf-moss-bright), var(--accent-bright) 58%, transparent);
+    box-shadow: 0 0 10px rgba(var(--inf-moss-rgb), 0.25);
+}
+
+.sub-heading::before {
+    background: linear-gradient(90deg, var(--inf-moss), var(--accent));
+}
+
+.dossier-kicker {
+    color: var(--inf-moss-bright);
+}
+
+.page-title-bar {
+    position: relative;
+}
+
+.page-title-bar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: min(190px, 45%);
+    height: 2px;
+    pointer-events: none;
+    background: linear-gradient(90deg, var(--inf-moss-bright), rgba(var(--inf-rust-rgb), 0.6) 55%, transparent);
+    opacity: 0.8;
+}
+
+/* -------------------------------------------------------------------------
+   5. Containment framing — legend, table shell, dossier, match surfaces
+   Colour and background only; no spacing, sizing or layout changes.
+   ------------------------------------------------------------------------- */
+
+.matchups-legend {
+    position: relative;
+    border-left-color: rgba(var(--inf-moss-rgb), 0.6);
+    box-shadow: inset 0 0 38px rgba(var(--inf-moss-rgb), 0.05);
+}
+
+.matchups-legend::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(90deg, rgba(var(--inf-moss-rgb), 0.55) 0 9px, transparent 9px 18px),
+        linear-gradient(90deg, rgba(var(--inf-rust-rgb), 0.5), transparent 62%);
+    opacity: 0.55;
+}
+
+.glass-table-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 150px;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(270deg, rgba(var(--inf-moss-rgb), 0.6), transparent);
+    box-shadow: 0 0 10px rgba(var(--inf-moss-rgb), 0.3);
+}
+
+.survivor-dossier {
+    position: relative;
+}
+
+.survivor-dossier::before {
+    content: "";
+    position: absolute;
+    top: -15px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(var(--inf-moss-rgb), 0.5), rgba(var(--inf-rust-rgb), 0.34) 45%, transparent 80%);
+}
+
+.outbreak-banner {
+    box-shadow: inset 0 0 28px rgba(var(--inf-moss-rgb), 0.06), 0 0 24px rgba(0, 0, 0, 0.22);
+}
+
+.match-card {
+    border-left-color: rgba(var(--inf-moss-rgb), 0.32);
+}
+
+.match-card-head {
+    background:
+        repeating-linear-gradient(90deg, rgba(var(--inf-moss-rgb), 0.05) 0 1px, transparent 1px 15px),
+        rgba(5, 6, 4, 0.34);
+}
+
+/* -------------------------------------------------------------------------
+   6. INFECTED — dormant hooks
+   Inert until the markup emits one of these classes. SAFE, NORMAL, DANGER
+   and ELIMINATED rules are not touched.
+   ------------------------------------------------------------------------- */
+
+.status.infected {
+    border-color: rgba(var(--inf-moss-rgb), 0.45);
+    background:
+        repeating-linear-gradient(135deg, rgba(var(--inf-moss-rgb), 0.1) 0 6px, transparent 6px 12px),
+        rgba(18, 23, 13, 0.78);
+    color: var(--inf-moss-bright);
+    box-shadow: inset 0 0 12px rgba(var(--inf-moss-rgb), 0.12), 0 0 14px rgba(var(--inf-moss-rgb), 0.1);
+}
+
+.status.infected::before {
+    background: var(--inf-spore-rgb);
+    box-shadow: 0 0 8px rgba(var(--inf-spore-rgb), 0.9), 0 0 16px rgba(var(--inf-moss-rgb), 0.6);
+}
+
+.survivor-card.infected {
+    --state: var(--inf-moss-bright);
+    --state-rgb: var(--inf-moss-rgb);
+    border-color: rgba(var(--inf-moss-rgb), 0.3);
+    border-top-color: rgba(var(--inf-spore-rgb), 0.6);
+    background:
+        radial-gradient(ellipse at 100% 0%, rgba(var(--inf-moss-rgb), 0.17), transparent 58%),
+        radial-gradient(ellipse at 0% 100%, rgba(var(--inf-rust-rgb), 0.2), transparent 56%),
+        repeating-linear-gradient(135deg, transparent 0 21px, rgba(var(--inf-moss-rgb), 0.03) 21px 22px),
+        linear-gradient(180deg, rgba(15, 19, 14, 0.94), rgba(8, 10, 7, 0.96));
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28), inset 0 0 42px rgba(var(--inf-moss-rgb), 0.05);
+}
+
+.survivor-card.infected .survivor-avatar {
+    border-color: rgba(var(--inf-spore-rgb), 0.5);
+    box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.45), 0 0 18px rgba(var(--inf-moss-rgb), 0.2);
+}
+
+.survivor-card.infected .survivor-name {
+    text-shadow: 0 0 22px rgba(var(--inf-moss-rgb), 0.28);
+}
+
+.survivor-threat.infected,
+.threat-box.infected {
+    border-left-color: var(--inf-moss);
+    background: rgba(var(--inf-moss-rgb), 0.08);
+    color: var(--inf-moss-bright);
+}
+
+.match-player.state-infected {
+    --p-state: var(--inf-moss-bright);
+    --p-rgb: var(--inf-moss-rgb);
+}
+
+.match-player.state-infected .match-name {
+    text-shadow: 0 0 20px rgba(var(--inf-moss-rgb), 0.3);
+}
+
+.survival-table tbody tr.row-infected td:first-child {
+    box-shadow: inset 2px 0 0 rgba(var(--inf-moss-rgb), 0.5);
+}
+
+.grp-chip.infected {
+    border-color: rgba(var(--inf-moss-rgb), 0.4);
+    background: rgba(var(--inf-moss-rgb), 0.1);
+    color: var(--inf-moss-bright);
+}
+
+.legend-dot.infected {
+    color: var(--inf-moss-bright);
+}
+
+.heart.is-infected {
+    color: var(--inf-moss-bright);
+    text-shadow: 0 0 10px rgba(var(--inf-spore-rgb), 0.5);
+}
+
+.infected-border {
+    --state: var(--inf-moss-bright);
+    --state-rgb: var(--inf-moss-rgb);
+}
+
+/* -------------------------------------------------------------------------
+   7. Motion — opt-in only, disabled by the existing reduced-motion rules
+   ------------------------------------------------------------------------- */
+
+@keyframes infSporePulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 8px rgba(var(--inf-spore-rgb), 0.85), 0 0 0 0 rgba(var(--inf-moss-rgb), 0.4);
+    }
+    50% {
+        opacity: 0.62;
+        box-shadow: 0 0 8px rgba(var(--inf-spore-rgb), 0.85), 0 0 0 5px rgba(var(--inf-moss-rgb), 0);
+    }
+}
+
+@keyframes infBadgePulse {
+    0%, 100% {
+        box-shadow: 0 0 14px rgba(var(--inf-moss-rgb), 0.18), inset 0 0 0 1px rgba(var(--inf-spore-rgb), 0.05);
+    }
+    50% {
+        box-shadow: 0 0 26px rgba(var(--inf-moss-rgb), 0.36), inset 0 0 0 1px rgba(var(--inf-spore-rgb), 0.14);
+    }
+}
+
+@keyframes infBloomBreathe {
+    0%, 100% {
+        opacity: 0.62;
+    }
+    50% {
+        opacity: 0.92;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .chap-status-badge.active-tag {
+        animation: infBadgePulse 4.6s ease-in-out infinite;
+    }
+
+    .status.infected::before,
+    .survivor-threat.infected .threat-dot,
+    .threat-box.infected .threat-dot {
+        animation: infSporePulse 2.8s ease-out infinite;
+    }
+
+    .chapter-row.active-now .chapter-content-wrapper::before {
+        animation: infBloomBreathe 14s ease-in-out infinite;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   8. Responsive tuning
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    body.apocalypse-theme::before {
+        opacity: 0.7;
+    }
+
+    body.apocalypse-theme::after {
+        opacity: 0.38;
+    }
+
+    .chapter-row.active-now {
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(var(--inf-moss-rgb), 0.1);
+    }
+
+    .chapter-row.active-now .chapter-content-wrapper::before {
+        inset: -10% -8% -12% -8%;
+    }
+
+    .page-title-bar::after {
+        width: min(140px, 52%);
     }
 }
