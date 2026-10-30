@@ -10,7 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Teko:wght@600;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="assets/illustrations/hero-endure-city.jpg">
+    <link rel="preload" as="image" href="assets/illustrations/chapter-2-the-infection.jpg">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chapter2.css">
 
     <!-- Vercel Web Analytics (static HTML) -->
     <script>
@@ -18,7 +20,7 @@
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
-<body class="apocalypse-theme">
+<body class="apocalypse-theme chapter-two">
 
     <div class="scanline-overlay" aria-hidden="true"></div>
     <div class="particle-ambient" aria-hidden="true"></div>
@@ -36,12 +38,19 @@
                 </div>
             </div>
 
+            <div class="nav-sector" aria-hidden="true">
+                <span class="nav-sector-dot"></span>
+                <span>CH.02</span>
+                <strong>INFECTION</strong>
+            </div>
+
             <nav class="nav-links" aria-label="Primary navigation">
                 <button class="nav-btn active" aria-current="page" onclick="switchTab('home')">OVERVIEW</button>
                 <button class="nav-btn" onclick="switchTab('chapters')">CHAPTERS</button>
+                <button class="nav-btn" onclick="switchTab('infected')">INFECTED</button>
                 <button class="nav-btn" onclick="switchTab('community')">COMMUNITY</button>
-                <button class="nav-btn" onclick="switchTab('leaderboard')">GW8 STANDINGS</button>
-                <button class="nav-btn" onclick="switchTab('matchups')">GW8 MATCHES</button>
+                <button class="nav-btn" onclick="switchTab('leaderboard')">STANDINGS</button>
+                <button class="nav-btn" onclick="switchTab('matchups')">MATCHES</button>
                 <button class="nav-btn" onclick="switchTab('rules')">RULES & LORE</button>
             </nav>
         </div>
@@ -50,47 +59,100 @@
     <!-- PAGE 1: HOME -->
     <main id="page-home" class="tab-page active">
         <section class="hero-section">
-            <div class="container text-center">
-                <div class="outbreak-banner">
-                    <span class="dot-pulse" aria-hidden="true"></span> POST-GW8 UPDATE • CHAPTER I COMPLETE
-                </div>
-                <h1 class="main-title">ENDURE AND <span class="green-glow">SURVIVE</span></h1>
-                <p class="hero-lead">
-                    The final GW8 standings and all 12 GW8 results are live. Track every survivor, every heart, and every battle across the Quarantine Zone.
-                </p>
-
-                <div class="stats-hub">
-                    <div class="stat-card safe-border">
-                        <span class="stat-num" data-stat="safe">10</span>
-                        <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(42%)</span></span>
-                    </div>
-                    <div class="stat-card normal-border">
-                        <span class="stat-num" data-stat="normal">4</span>
-                        <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(17%)</span></span>
-                    </div>
-                    <div class="stat-card danger-border">
-                        <span class="stat-num" data-stat="danger">10</span>
-                        <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(42%)</span></span>
-                    </div>
-                    <div class="stat-card elim-border">
-                        <span class="stat-num" data-stat="eliminated">0</span>
-                        <span class="stat-lbl">ELIMINATED</span>
-                    </div>
+            <div class="container text-center hero-container">
+                <div class="outbreak-banner c2-advisory" role="note">
+                    <span class="dot-pulse" aria-hidden="true"></span>
+                    <span class="c2-advisory-text">BIOHAZARD ADVISORY — CHAPTER II INITIATED</span>
+                    <span class="c2-advisory-code" aria-hidden="true">SECTOR 02 // GW9–14</span>
                 </div>
 
-                <div class="cta-actions">
-                    <button class="btn btn-main" onclick="switchTab('leaderboard')">VIEW GW8 STANDINGS</button>
-                    <button class="btn btn-outline" onclick="switchTab('matchups')">EXPLORE GW8 MATCHUPS</button>
+                <div class="hero-layout">
+                    <div class="hero-main">
+                        <span class="hero-chapter-tag">CHAPTER II // ACTIVE SECTOR</span>
+                        <h1 class="main-title"><span class="title-line">THE</span><span class="green-glow">INFECTION</span></h1>
+                        <p class="hero-lead">
+                            The quarantine is breached. The infection has reached the field — every heart lost from here brings a survivor closer to permanent elimination. Track the outbreak across GW9–GW14.
+                        </p>
+
+                        <div class="cta-actions">
+                            <button class="btn btn-main" onclick="switchTab('chapters')">ENTER CHAPTER II</button>
+                            <button class="btn btn-outline" onclick="switchTab('leaderboard')">VIEW STANDINGS</button>
+                            <button class="btn btn-outline" onclick="switchTab('matchups')">EXPLORE MATCHUPS</button>
+                        </div>
+                    </div>
+
+                    <aside class="hero-side" aria-label="Chapter II sector status">
+                        <div class="sector-panel">
+                            <div class="sector-head">
+                                <span class="c2-label">Sector Status</span>
+                                <span class="sector-feed">FIELD BRIEF</span>
+                            </div>
+                            <dl class="sector-rows">
+                                <div class="sector-row">
+                                    <dt>Threat</dt>
+                                    <dd class="is-warning">HIGH</dd>
+                                </div>
+                                <div class="sector-row">
+                                    <dt>Infected</dt>
+                                    <dd>04</dd>
+                                </div>
+                                <div class="sector-row">
+                                    <dt>Hearts</dt>
+                                    <dd>59</dd>
+                                </div>
+                                <div class="sector-row">
+                                    <dt>Active Phase</dt>
+                                    <dd>GW9–GW14</dd>
+                                </div>
+                            </dl>
+                            <div class="sector-foot">
+                                <span>Provisional figures</span>
+                                <span>Sector 02</span>
+                            </div>
+                        </div>
+
+                        <figure class="hero-logo-plate">
+                            <div class="hero-logo-frame">
+                               <img src="assets/illustrations/tournament%20groupe%20logo.jpg" alt="Official THE LAST OF FPL tournament logo" width="640" height="640" decoding="async">
+                            </div>
+                            <figcaption>Official Tournament Key Art</figcaption>
+                        </figure>
+                    </aside>
+                </div>
+
+                <div class="hero-ledger-wrap">
+                    <div class="ledger-head">
+                        <span class="c2-label">Status Ledger</span>
+                        <span class="ledger-meta">Registry sync</span>
+                    </div>
+                    <div class="stats-hub hero-ledger">
+                        <div class="stat-card safe-border">
+                            <span class="stat-num" data-stat="safe">10</span>
+                            <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(42%)</span></span>
+                        </div>
+                        <div class="stat-card normal-border">
+                            <span class="stat-num" data-stat="normal">4</span>
+                            <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(17%)</span></span>
+                        </div>
+                        <div class="stat-card danger-border">
+                            <span class="stat-num" data-stat="danger">10</span>
+                            <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(42%)</span></span>
+                        </div>
+                        <div class="stat-card elim-border">
+                            <span class="stat-num" data-stat="eliminated">0</span>
+                            <span class="stat-lbl">ELIMINATED</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="hero-telemetry" aria-hidden="true">
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Sector</span>
-                        <span class="telemetry-val">Quarantine Zone</span>
+                        <span class="telemetry-val">Sector 02 — Infection</span>
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Phase</span>
-                        <span class="telemetry-val">GW8 Complete</span>
+                        <span class="telemetry-val">GW9 – GW14</span>
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Survivors</span>
@@ -98,16 +160,9 @@
                     </div>
                     <div class="telemetry-cell telemetry-signal">
                         <span class="telemetry-key">Signal</span>
-                        <span class="telemetry-val"><span class="signal-dot"></span>Stable</span>
+                        <span class="telemetry-val"><span class="signal-dot"></span>Degraded</span>
                     </div>
                 </div>
-
-                <figure class="hero-logo-plate">
-                    <div class="hero-logo-frame">
-                       <img src="assets/illustrations/tournament%20groupe%20logo.jpg" alt="Official THE LAST OF FPL tournament logo" width="640" height="640" decoding="async">
-                    </div>
-                    <figcaption>Official Tournament Key Art</figcaption>
-                </figure>
             </div>
         </section>
     </main>
@@ -139,7 +194,12 @@
             </div>
 
             <div class="chapters-vertical-list">
-                <div class="chapter-row completed" style="--chapter-art: url('assets/illustrations/chapter-0-the-outbreak.jpg');">
+                <div class="c2-group-head" data-group="archived">
+                    <span class="c2-label">Archived Chapters</span>
+                    <span class="c2-group-count">02 Files // Closed</span>
+                </div>
+
+                <div class="chapter-row completed c2-file c2-file-start" style="--chapter-art: url('assets/illustrations/chapter-0-the-outbreak.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge">COMPLETED</div>
                         <div class="chap-info">
@@ -154,7 +214,7 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row completed" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
+                <div class="chapter-row completed c2-file c2-file-end" style="--chapter-art: url('assets/illustrations/chapter-1-quarantine-zone.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge">COMPLETED</div>
                         <div class="chap-info">
@@ -169,13 +229,20 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row active-now" style="--chapter-art: url('assets/illustrations/chapter-2-the-infection.jpg');">
+                <div class="c2-group-head" data-group="active">
+                    <span class="c2-label">Active Chapter</span>
+                    <span class="c2-group-count"><span class="c2-live-dot" aria-hidden="true"></span>01 File // Unsealed</span>
+                </div>
+
+                <div class="chapter-row active-now c2-active-file" style="--chapter-art: url('assets/illustrations/chapter-2-the-infection.jpg');">
+                    <span class="c2-current-flag" aria-hidden="true">Current Sector</span>
                     <div class="chapter-content-wrapper">
-                        <div class="chap-status-badge active-tag">UP NEXT</div>
+                        <div class="chap-status-badge active-tag">ACTIVE</div>
                         <div class="chap-info">
                             <h3>☣️ Chapter II — THE INFECTION</h3>
                             <span class="chap-span">GW9 — GW14</span>
                             <p lang="ar" dir="rtl">ظهور العدوى، ارتفاع المخاطر، وبداية الإقصاء الحقيقي؛ الوصول إلى صفر روح يعني الخروج من البطولة.</p>
+                            <p class="c2-active-brief" lang="en">The quarantine is breached. The infection has reached the field — every heart lost from here brings a survivor closer to permanent elimination.</p>
                         </div>
                     </div>
                     <figure class="chapter-visual">
@@ -184,7 +251,12 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-3-the-forest.jpg');">
+                <div class="c2-group-head" data-group="locked">
+                    <span class="c2-label">Classified // Unknown</span>
+                    <span class="c2-group-count">05 Files // Sealed</span>
+                </div>
+
+                <div class="chapter-row locked c2-file c2-file-start" style="--chapter-art: url('assets/illustrations/chapter-3-the-forest.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge lock-tag">LOCKED</div>
                         <div class="chap-info">
@@ -199,7 +271,7 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-4-the-tunnels.jpg');">
+                <div class="chapter-row locked c2-file c2-file-end" style="--chapter-art: url('assets/illustrations/chapter-4-the-tunnels.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge lock-tag">LOCKED</div>
                         <div class="chap-info">
@@ -214,7 +286,7 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-5-jackson.jpg');">
+                <div class="chapter-row locked c2-file c2-file-start" style="--chapter-art: url('assets/illustrations/chapter-5-jackson.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge lock-tag">LOCKED</div>
                         <div class="chap-info">
@@ -229,7 +301,7 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked" style="--chapter-art: url('assets/illustrations/chapter-6-firefly-war.jpg');">
+                <div class="chapter-row locked c2-file c2-file-end" style="--chapter-art: url('assets/illustrations/chapter-6-firefly-war.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge lock-tag">LOCKED</div>
                         <div class="chap-info">
@@ -244,7 +316,7 @@
                     </figure>
                 </div>
 
-                <div class="chapter-row locked final-chap" style="--chapter-art: url('assets/illustrations/chapter-7-the-hospital-final.jpg');">
+                <div class="chapter-row locked final-chap c2-file c2-file-start" style="--chapter-art: url('assets/illustrations/chapter-7-the-hospital-final.jpg');">
                     <div class="chapter-content-wrapper">
                         <div class="chap-status-badge lock-tag">GRAND FINAL</div>
                         <div class="chap-info">
@@ -258,6 +330,39 @@
                         <span class="chapter-visual-tag" aria-hidden="true">FIELD RECORD</span>
                     </figure>
                 </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PAGE: INFECTED -->
+    <main id="page-infected" class="tab-page">
+        <div class="container">
+            <div class="c2-infected-head">
+                <div class="c2-infected-intro">
+                    <span class="page-kicker">Outbreak // Contagion Log</span>
+                    <h2 class="section-heading text-left">INFECTED</h2>
+                    <p class="sub-heading">Confirmed case files pulled from the tournament registry. Infection is curated by the organizer and is never derived from DANGER status or remaining hearts.</p>
+                </div>
+                <aside class="c2-case-meter" aria-label="Confirmed infected count">
+                    <span class="c2-label">Case Counter</span>
+                    <p class="c2-case-total"><span id="infectedTotal">04</span></p>
+                    <p class="c2-case-caption">Confirmed Infected</p>
+                    <dl class="c2-case-meta">
+                        <div><dt>Registry</dt><dd>Manual &middot; 04 Names</dd></div>
+                        <div><dt>Sector</dt><dd>02 // GW9&ndash;GW14</dd></div>
+                        <div><dt>Watch</dt><dd>Active</dd></div>
+                    </dl>
+                </aside>
+            </div>
+
+            <div class="c2-infected-notice" role="note">
+                <span class="c2-hazard-bar" aria-hidden="true"></span>
+                <span class="c2-notice-code">BIOHAZARD // CASE FILES 01&ndash;04</span>
+                <span class="c2-notice-text">Confirmed cases only &mdash; a heart count or DANGER tag never adds a case.</span>
+            </div>
+
+            <div class="c2-infected-grid" id="infectedDossier" aria-live="polite">
+                <p class="c2-infected-loading">Retrieving confirmed case files&hellip;</p>
             </div>
         </div>
     </main>
@@ -361,18 +466,19 @@
         </div>
     </main>
 
-    <!-- PAGE 5: GW8 MATCHUPS -->
+    <!-- PAGE 5: GW9 MATCHUPS -->
     <main id="page-matchups" class="tab-page">
         <div class="container">
-            <span class="page-kicker">Pairings // GW8</span>
-            <h2 class="section-heading text-left">GW8 — OFFICIAL MATCHUPS</h2>
-            <p class="sub-heading" id="matchupSummary">Quarantine Zone Battles — 8 SAFE vs DANGER • 4 NORMAL vs NORMAL • 12 Matches</p>
+            <span class="page-kicker">Pairings // GW9</span>
+            <h2 class="section-heading text-left">GW9 — OFFICIAL MATCHUPS</h2>
+            <p class="sub-heading" id="matchupSummary">Quarantine Zone Battles — 10 SAFE vs DANGER • 2 NORMAL vs NORMAL • 12 Matches</p>
 
             <div class="matchups-legend" aria-label="Survival state legend">
                 <span class="legend-item"><span class="legend-dot safe" aria-hidden="true"></span>SAFE</span>
                 <span class="legend-item"><span class="legend-dot normal" aria-hidden="true"></span>NORMAL</span>
                 <span class="legend-item"><span class="legend-dot danger" aria-hidden="true"></span>DANGER</span>
-                <span class="legend-note">GW8 results final</span>
+                <span class="legend-item"><span class="legend-emoji" aria-hidden="true">🦠</span>INFECTED</span>
+                <span class="legend-note">GW9 fixtures — awaiting results</span>
             </div>
 
             <div class="groups-layout">
@@ -383,7 +489,7 @@
                             <span class="grp-vs">VS</span>
                             <span class="grp-chip danger">DANGER</span>
                         </span>
-                        <span class="grp-count">8 MATCHES</span>
+                        <span class="grp-count">10 MATCHES</span>
                     </div>
                     <div class="match-list" id="groupA-list"></div>
                 </div>
@@ -394,7 +500,7 @@
                             <span class="grp-vs">VS</span>
                             <span class="grp-chip normal">NORMAL</span>
                         </span>
-                        <span class="grp-count">4 MATCHES</span>
+                        <span class="grp-count">2 MATCHES</span>
                     </div>
                     <div class="match-list" id="groupB-list"></div>
                 </div>
@@ -422,9 +528,214 @@
                 </div>
                 <div class="rule-card">
                     <h3>💀 HEARTS STATS</h3>
-                    <p>4 joueurs ont perdu des cœurs (Fatima, Wld Lhaj, Moulchi à 2/3 ❤️ | Abdel Chipi à 1/3 ❤️).</p>
+                    <p>3 joueurs ont perdu des cœurs (Fatima, Wld Lhaj, Abdel Chipi à 1/3 ❤️).</p>
                 </div>
             </div>
+            <section class="c2-codex" aria-labelledby="codex-title">
+                <header class="c2-codex-head">
+                    <span class="c2-codex-kicker">Field Manual // Chapter II</span>
+                    <h3 class="c2-codex-title" id="codex-title">THE INFECTION CODEX</h3>
+                    <p class="c2-codex-lead">Ruleset governing GW9&ndash;GW14. Infection is a second, independent system layered on top of the survival rules above &mdash; it never replaces them.</p>
+                </header>
+
+                <div class="c2-codex-grid">
+                    <article class="c2-codex-entry" aria-labelledby="codex-intro">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">01</span>
+                            <h4 class="c2-codex-entry-title" id="codex-intro">Chapter II Introduction</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <p>CHAPTER II &mdash; THE INFECTION runs from GW9 to GW14: six gameweeks of the same survival format with one new variable &mdash; an infection that never goes away.</p>
+                            <p>Every survivor enters the chapter with the hearts they finished Chapter I with. Nothing is reset and nothing is restored. Hearts, statuses and infection are tracked independently, and a single defeat can still end a tournament.</p>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry" aria-labelledby="codex-cases">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">02</span>
+                            <h4 class="c2-codex-entry-title" id="codex-cases">The Initial Infected</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <p>Four survivors enter Chapter II already infected. The roster is curated by the organizer and stays permanent for the whole chapter.</p>
+                            <ul class="c2-codex-cases">
+                                <li><span class="c2-codex-case-name">Wld Lhaj</span><span class="c2-codex-case-heart">1 Heart</span></li>
+                                <li><span class="c2-codex-case-name">Abdellah Moghtanim</span><span class="c2-codex-case-heart">1 Heart</span></li>
+                                <li><span class="c2-codex-case-name">Fatima</span><span class="c2-codex-case-heart">1 Heart</span></li>
+                                <li><span class="c2-codex-case-name">Abdelghafour</span><span class="c2-codex-case-heart">1 Heart</span></li>
+                            </ul>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry" aria-labelledby="codex-transmission">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">03</span>
+                            <h4 class="c2-codex-entry-title" id="codex-transmission">Infection Transmission</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <ul class="c2-codex-list">
+                                <li>An infected player who wins infects their opponent.</li>
+                                <li>An infected player who loses does not infect their opponent.</li>
+                                <li>Infection spreads only through an infected player&rsquo;s victory.</li>
+                                <li>Infection is permanent throughout Chapter II.</li>
+                                <li>Winning or recovering hearts does not cure infection.</li>
+                            </ul>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry" aria-labelledby="codex-hearts">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">04</span>
+                            <h4 class="c2-codex-entry-title" id="codex-hearts">Heart System</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <ul class="c2-codex-list">
+                                <li>Players retain the hearts they had at the end of Chapter I.</li>
+                                <li>Hearts are not reset at the beginning of Chapter II.</li>
+                                <li>A DANGER player loses one heart upon defeat.</li>
+                                <li>An INFECTED player loses one heart upon defeat.</li>
+                                <li>If a player is both DANGER and INFECTED, they lose ONE heart only, never two.</li>
+                                <li>Winning does not restore hearts.</li>
+                            </ul>
+                            <div class="c2-codex-alert">
+                                <span class="c2-codex-alert-label">One Heart Only</span>
+                                <p>DANGER + INFECTED still costs one heart per defeat &mdash; never two.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry is-wide" aria-labelledby="codex-status">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">05</span>
+                            <h4 class="c2-codex-entry-title" id="codex-status">Status &amp; Infection</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <p>The two systems are independent and are tracked separately.</p>
+                            <div class="c2-codex-systems">
+                                <div class="c2-codex-system">
+                                    <span class="c2-codex-system-label">Status</span>
+                                    <ul class="c2-codex-chips">
+                                        <li class="is-safe">SAFE</li>
+                                        <li class="is-normal">NORMAL</li>
+                                        <li class="is-danger">DANGER</li>
+                                    </ul>
+                                </div>
+                                <div class="c2-codex-system">
+                                    <span class="c2-codex-system-label">Infection</span>
+                                    <ul class="c2-codex-chips">
+                                        <li class="is-infected">INFECTED</li>
+                                        <li class="is-clear">UNINFECTED</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <p>A player can be SAFE + INFECTED, NORMAL + INFECTED, or DANGER + INFECTED. Infection does not automatically make a player DANGER.</p>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry is-wide" aria-labelledby="codex-transitions">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">06</span>
+                            <h4 class="c2-codex-entry-title" id="codex-transitions">Status Transitions</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <p>Chapter II uses exactly the same status transition rules as Chapter I.</p>
+                            <div class="c2-codex-table-wrap">
+                                <table class="c2-codex-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Previous status</th>
+                                            <th scope="col">Result</th>
+                                            <th scope="col">New status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>SAFE</td><td>Win</td><td>SAFE</td></tr>
+                                        <tr><td>SAFE</td><td>Loss</td><td>NORMAL</td></tr>
+                                        <tr><td>NORMAL</td><td>Win</td><td>SAFE</td></tr>
+                                        <tr><td>NORMAL</td><td>Loss</td><td>DANGER</td></tr>
+                                        <tr><td>DANGER</td><td>Win</td><td>NORMAL</td></tr>
+                                        <tr class="is-critical"><td>DANGER</td><td>Loss</td><td>DANGER + lose one heart</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="c2-codex-note">The infection system does not change these transitions.</p>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry" aria-labelledby="codex-elimination">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">07</span>
+                            <h4 class="c2-codex-entry-title" id="codex-elimination">Elimination</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <ul class="c2-codex-list">
+                                <li>Reaching 0 hearts means permanent elimination.</li>
+                                <li>Eliminated players cannot return.</li>
+                                <li>No automatic protection exists for infected players or any status.</li>
+                            </ul>
+                            <div class="c2-codex-alert is-critical">
+                                <span class="c2-codex-alert-label">Zero Hearts</span>
+                                <p>0 HEARTS = PERMANENT ELIMINATION.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry" aria-labelledby="codex-recovery">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">08</span>
+                            <h4 class="c2-codex-entry-title" id="codex-recovery">No Recovery</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <ul class="c2-codex-list">
+                                <li>No hearts are restored through victories.</li>
+                                <li>Infection cannot be removed during Chapter II.</li>
+                                <li>No automatic bonus hearts are awarded.</li>
+                            </ul>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry is-wide" aria-labelledby="codex-duration">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">09</span>
+                            <h4 class="c2-codex-entry-title" id="codex-duration">Chapter Duration</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <dl class="c2-codex-stats">
+                                <div><dt>Chapter</dt><dd>II &mdash; The Infection</dd></div>
+                                <div><dt>Window</dt><dd>GW9 &ndash; GW14</dd></div>
+                                <div><dt>Length</dt><dd>6 Gameweeks</dd></div>
+                                <div><dt>Survivors</dt><dd>24 at the beginning</dd></div>
+                            </dl>
+                            <p>The target is approximately 20 survivors at the end, but this is NOT a mandatory number. Actual eliminations are determined by match results and heart rules.</p>
+                        </div>
+                    </article>
+
+                    <article class="c2-codex-entry is-wide c2-codex-golden-entry" aria-labelledby="codex-golden">
+                        <header class="c2-codex-entry-head">
+                            <span class="c2-codex-index" aria-hidden="true">10</span>
+                            <h4 class="c2-codex-entry-title" id="codex-golden">The Golden Rules</h4>
+                        </header>
+                        <div class="c2-codex-body">
+                            <ol class="c2-codex-golden">
+                                <li>An infected player who wins infects their opponent.</li>
+                                <li>An infected player who loses does not spread infection.</li>
+                                <li>An infected player loses one heart upon defeat.</li>
+                                <li>A DANGER player loses one heart upon defeat.</li>
+                                <li>DANGER + INFECTED still means one heart lost, not two.</li>
+                                <li>Winning never restores hearts.</li>
+                                <li>Infection remains permanent throughout Chapter II.</li>
+                                <li>Zero hearts means permanent elimination.</li>
+                                <li>Hearts are not reset at the beginning of Chapter II.</li>
+                            </ol>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="c2-codex-outro">
+                    <span class="c2-codex-outro-mark" aria-hidden="true">The Last of FPL</span>
+                    <p class="c2-codex-outro-line">24 SURVIVORS. ONE INFECTION. NO SECOND CHANCES.</p>
+                    <p class="c2-codex-outro-sub">Survive the infection. Protect your hearts. Trust no one.</p>
+                </div>
+            </section>
         </div>
     </main>
 
