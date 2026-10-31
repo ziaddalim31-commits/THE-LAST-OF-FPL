@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>THE LAST OF FPL - Supabase Test</title>
+</head>
+<body>
+  <h1>THE LAST OF FPL</h1>
+  <p id="connection">Connecting to Supabase...</p>
+  <pre id="results">Waiting for results...</pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL =
+      "https://xpaouenjkfdynjkhbsrb.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_VhZK3TH1dyphsH8HzoWGmQ_kF4VLQie";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function runTests() {
+      const connection = document.getElementById("connection");
+      const resultsElement = document.getElementById("results");
+
+      const tables = [
+        "players",
+        "gameweeks",
+        "matches",
+        "player_gameweek_history"
+      ];
+
+      const results = [];
+
+      try {
+        for (const table of tables) {
+          const { count, error } = await supabaseClient
+            .from(table)
+            .select("*", { count: "exact", head: true });
+
+          if (error) {
+            results.push(`${table}: ERROR - ${error.message}`);
+          } else {
+            results.push(`${table}: OK - ${count} rows`);
+            const { data: gameweeks, error: gameweeksError } =
+  await supabaseClient
+    .from("gameweeks")
+    .select("*")
+    .order("id", { ascending: true });
+
+if (gameweeksError) {
+  console.error(gameweeksError);
+} else {
+  console.table(gameweeks);
+}
+          }
+        }
+
+        const { data, error } = await supabaseClient
+          .from("matches")
+          .select(`
+            id,
+            gameweek_id,
+            player_a_id,
+            player_b_id,
+            points_a,
+            points_b,
+            winner_id,
+            status
+          `)
+          .order("id", { ascending: true });
+
+        if (error) {
+          results.push(`Match details: ERROR - ${error.message}`);
+        } else {
+          results.push("");
+          results.push(`Total matches retrieved: ${data.length}`);
+          results.push("");
+          results.push(JSON.stringify(data, null, 2));
+        }
+
+        connection.textContent = "Test finished.";
+        resultsElement.textContent = results.join("\n");
+      } catch (error) {
+        connection.textContent = "Test failed.";
+        resultsElement.textContent = error.message;
+        console.error(error);
+      }
+    }
+    const { data: gwData, error: gwError } =
+  await supabaseClient
+    .from("gameweeks")
+    .select("*")
+    .order("id");
+
+if (gwError) {
+  results.push("GAMEWEEKS ERROR: " + gwError.message);
+} else {
+  results.push("GAMEWEEKS DATA:");
+  results.push(JSON.stringify(gwData, null, 2));
+}
+
+    runTests();
+  </script>
+</body>
+</html>

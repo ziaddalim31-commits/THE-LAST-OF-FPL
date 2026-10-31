@@ -6,6 +6,22 @@
 "use strict";
 
 // ---------------------------------------------------------
+// LIVE MATCH CENTRE — PHASE 1A (display-only)
+// Set LIVE_ENABLED to true once the /api/live proxy is verified.
+// ---------------------------------------------------------
+const LIVE_ENABLED = true;
+const LIVE_REFRESH_MS = 60000;
+
+const liveState = {
+    data: null,
+    updatedAt: null,
+    stale: false,
+    error: null,
+    timer: null,
+    inFlight: false
+};
+
+// ---------------------------------------------------------
 // 1. FALLBACK PLAYER DATA
 // Used only if Supabase cannot load the players.
 // Legacy GW6 reference points are retained here but are never shown as current points.
@@ -1040,7 +1056,164 @@ async function renderMatchups() {
         other: otherMatches.length
     });
 
+    if (LIVE_ENABLED && liveState.data) {
+        applyLiveScores();
+    }
+
     publishDebugState();
+}
+
+
+// ---------------------------------------------------------
+// 7B. LIVE MATCH CENTRE — provisional scores (display only)
+// ---------------------------------------------------------
+
+function ensureLiveMeta() {
+    const page = document.getElementById("page-matchups");
+    if (!page) return null;
+
+    let meta = page.querySelector(".match-live-meta");
+    if (!meta) {
+        meta = document.createElement("div");
+        meta.className = "match-live-meta";
+        meta.setAttribute("role", "status");
+        meta.setAttribute("aria-live", "polite");
+        const anchor = page.querySelector(".groups-layout");
+        if (anchor && anchor.parentElement) {
+            anchor.parentElement.insertBefore(meta, anchor);
+        } else {
+            page.appendChild(meta);
+        }
+    }
+
+    const stamp = liveState.updatedAt
+        ? liveState.updatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "—";
+    const label = liveState.stale ? "LIVE · PROVISIONAL — STALE" : "LIVE · PROVISIONAL";
+    const stampText = liveState.stale ? `Last update ${stamp}` : `Updated ${stamp}`;
+
+    meta.classList.toggle("is-stale", Boolean(liveState.stale));
+    meta.innerHTML = `
+        <span class="live-dot" aria-hidden="true"></span>
+        <span class="live-label">${label}</span>
+        <span class="live-stamp">${stampText}</span>
+        <span class="live-note">Bench (incl. Bench Boost) &amp; Triple Captain bonus excluded · Captain ×2 · Hits deducted · Autosubs not calculated</span>
+    `;
+
+    return meta;
+}
+
+function applyLiveScores() {
+    if (!LIVE_ENABLED || !liveState.data || !liveState.data.players) return;
+
+    const playersLive = liveState.data.players;
+    const cards = document.querySelectorAll('#page-matchups .match-card[data-match-id^="gw9-"]');
+
+    cards.forEach(card => {
+        let cardHasLive = false;
+
+        card.querySelectorAll(".match-player[data-player-id]").forEach(playerEl => {
+            const existing = playerEl.querySelector(".match-live-score");
+            if (existing) existing.remove();
+            playerEl.classList.remove("has-live");
+
+            const record = playersLive[playerEl.dataset.playerId];
+            if (!record || record.points === null || record.points === undefined) return;
+
+            const chip = document.createElement("span");
+            chip.className = "match-live-score" + (liveState.stale ? " is-stale" : "");
+            chip.title = "Provisional live score — starting XI only (no Bench Boost); captain ×2 (no Triple Captain bonus); transfer hits deducted; autosubs not applied";
+            chip.setAttribute("aria-label", "Provisional live score: " + record.points + " points");
+            chip.innerHTML = `<strong>${escapeHTML(record.points)}</strong><small>LIVE</small>`;
+
+            const name = playerEl.querySelector(".match-name");
+            if (name) {
+                name.insertAdjacentElement("afterend", chip);
+            } else {
+                playerEl.appendChild(chip);
+            }
+
+            playerEl.classList.add("has-live");
+            cardHasLive = true;
+        });
+
+        card.classList.toggle("has-live", cardHasLive);
+
+        let badge = card.querySelector(".match-badge.live-provisional");
+        if (cardHasLive && !badge) {
+            const head = card.querySelector(".match-card-head");
+            if (head) {
+                badge = document.createElement("span");
+                badge.className = "match-badge live-provisional";
+                badge.textContent = "LIVE · PROVISIONAL";
+                head.appendChild(badge);
+            }
+        } else if (!cardHasLive && badge) {
+            badge.remove();
+        }
+    });
+
+    ensureLiveMeta();
+}
+
+async function loadLiveScores() {
+    if (!LIVE_ENABLED || liveState.inFlight) return;
+
+    liveState.inFlight = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+
+    try {
+        const response = await fetch("/api/live?gw=9", {
+            headers: { Accept: "application/json" },
+            signal: controller.signal
+        });
+
+        if (!response.ok) throw new Error("HTTP " + response.status);
+
+        const payload = await response.json();
+        if (!payload || payload.ok !== true || !payload.players) {
+            throw new Error("Invalid live payload");
+        }
+
+        liveState.data = payload;
+        liveState.updatedAt = payload.updated_at ? new Date(payload.updated_at) : new Date();
+        liveState.stale = Boolean(payload.stale);
+        liveState.error = null;
+        applyLiveScores();
+    } catch (error) {
+        liveState.error = error;
+        if (liveState.data) {
+            liveState.stale = true;
+            applyLiveScores();
+        }
+    } finally {
+        clearTimeout(timer);
+        liveState.inFlight = false;
+    }
+}
+
+function startLiveScores() {
+    if (!LIVE_ENABLED) return;
+
+    loadLiveScores();
+
+    if (liveState.timer) clearInterval(liveState.timer);
+    liveState.timer = setInterval(() => {
+        if (document.hidden) return;
+        const page = document.getElementById("page-matchups");
+        if (page && page.classList.contains("active")) {
+            loadLiveScores();
+        }
+    }, LIVE_REFRESH_MS);
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) return;
+        const page = document.getElementById("page-matchups");
+        if (page && page.classList.contains("active")) {
+            loadLiveScores();
+        }
+    });
 }
 
 // ---------------------------------------------------------
@@ -1062,6 +1235,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     syncJourneyLedger();
 
     await loadGW8Matches();
+
+    startLiveScores();
 
     document.body.classList.remove("intro-pending");
     document.body.classList.add("intro-complete");
