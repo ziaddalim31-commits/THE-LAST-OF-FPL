@@ -3762,3 +3762,706 @@ body.chapter-two #page-matchups .match-card.has-live .match-points.is-pending {
         animation: none;
     }
 }
+
+/* =========================================================================
+   13. TEAM LINEUP VIEWER
+   Read-only modal opened from a participant name in MATCHES.
+   Silhouettes only — no player photographs are used in this phase.
+   ========================================================================= */
+
+body.chapter-two .match-name-trigger {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 4px 0;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--bone);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(195, 212, 148, 0.34);
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: 1px;
+    touch-action: manipulation;
+    transition: color 160ms var(--c2-ease), text-decoration-color 160ms var(--c2-ease), background 160ms var(--c2-ease);
+}
+
+body.chapter-two #page-matchups .match-name.match-name-trigger {
+    min-height: 44px;
+}
+
+body.chapter-two .match-name-trigger:hover,
+body.chapter-two .match-name-trigger:focus-visible {
+    color: var(--c2-moss-bright);
+    text-decoration-color: currentColor;
+    background: rgba(195, 212, 148, 0.07);
+}
+
+body.chapter-two .match-name-trigger:focus-visible {
+    outline: 2px solid var(--c2-moss-bright);
+    outline-offset: 2px;
+}
+
+body.chapter-two.tlv-modal-open {
+    overflow: hidden;
+}
+
+body.chapter-two .tlv-dialog {
+    width: min(1080px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(92vh, 920px);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--c2-hairline-strong);
+    border-radius: 3px;
+    background: var(--c2-panel);
+    color: var(--bone);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+}
+
+body.chapter-two .tlv-dialog::backdrop {
+    background: rgba(3, 4, 5, 0.84);
+    backdrop-filter: blur(3px);
+}
+
+body.chapter-two .tlv-panel {
+    display: flex;
+    flex-direction: column;
+    max-height: inherit;
+    min-height: 0;
+    background:
+        radial-gradient(ellipse at 12% 0%, rgba(154, 170, 178, 0.08), transparent 55%),
+        var(--c2-panel);
+}
+
+body.chapter-two .tlv-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px 14px;
+    border-bottom: 1px solid var(--c2-hairline);
+}
+
+body.chapter-two .tlv-head-copy {
+    min-width: 0;
+}
+
+body.chapter-two .tlv-kicker {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--c2-moss-bright);
+    font-family: var(--c2-mono);
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+body.chapter-two .tlv-participant {
+    margin: 0;
+    color: var(--bone);
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 2.6vw, 2.3rem);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: 0.01em;
+    overflow-wrap: anywhere;
+}
+
+body.chapter-two .tlv-team {
+    margin: 6px 0 0;
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    overflow-wrap: anywhere;
+}
+
+body.chapter-two .tlv-close {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--c2-hairline-strong);
+    background: transparent;
+    color: var(--bone-dim);
+    font-family: var(--c2-mono);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 160ms var(--c2-ease), border-color 160ms var(--c2-ease), background 160ms var(--c2-ease);
+}
+
+body.chapter-two .tlv-close:hover {
+    color: var(--bone);
+    border-color: var(--c2-fog-faint);
+    background: rgba(160, 174, 179, 0.08);
+}
+
+body.chapter-two .tlv-close:focus-visible,
+body.chapter-two .tlv-retry:focus-visible {
+    outline: 2px solid var(--c2-moss-bright);
+    outline-offset: 2px;
+}
+
+body.chapter-two .tlv-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 22px;
+    border-bottom: 1px solid var(--c2-hairline);
+    background: rgba(6, 7, 8, 0.35);
+}
+
+body.chapter-two .tlv-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border: 1px solid var(--c2-hairline-strong);
+    font-family: var(--c2-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+body.chapter-two .tlv-status[data-tone="final"] {
+    color: var(--c2-moss-bright);
+    border-color: rgba(195, 212, 148, 0.5);
+    background: rgba(141, 157, 99, 0.12);
+}
+
+body.chapter-two .tlv-status[data-tone="provisional"],
+body.chapter-two .tlv-status[data-tone="live"] {
+    color: var(--c2-warning-bright);
+    border-color: rgba(200, 81, 66, 0.5);
+    background: rgba(168, 50, 42, 0.14);
+}
+
+body.chapter-two .tlv-status[data-tone="checking"] {
+    color: #d8b26a;
+    border-color: rgba(216, 178, 106, 0.45);
+    background: rgba(216, 178, 106, 0.1);
+}
+
+body.chapter-two .tlv-status[data-tone="loading"],
+body.chapter-two .tlv-status[data-tone="unavailable"],
+body.chapter-two .tlv-status[data-tone="unknown"] {
+    color: var(--c2-fog-dim);
+}
+
+body.chapter-two .tlv-status[data-tone="error"] {
+    color: var(--c2-warning-bright);
+    border-color: rgba(200, 81, 66, 0.5);
+}
+
+body.chapter-two .tlv-meta {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+body.chapter-two .tlv-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 22px 22px;
+    background:
+        linear-gradient(180deg, rgba(6, 7, 8, 0.18), transparent 180px),
+        var(--c2-charcoal);
+}
+
+body.chapter-two .tlv-banner {
+    margin: 0 0 16px;
+    padding: 9px 12px;
+    border-left: 2px solid var(--c2-hairline-strong);
+    background: rgba(6, 7, 8, 0.4);
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    line-height: 1.6;
+    letter-spacing: 0.05em;
+}
+
+body.chapter-two .tlv-banner.is-final {
+    border-left-color: var(--c2-moss-bright);
+    color: var(--c2-moss-bright);
+}
+
+body.chapter-two .tlv-banner.is-provisional {
+    border-left-color: var(--c2-warning-bright);
+    color: #e0a294;
+}
+
+body.chapter-two .tlv-squad + .tlv-squad {
+    margin-top: 22px;
+}
+
+body.chapter-two .tlv-squad-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 9px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--c2-hairline);
+}
+
+body.chapter-two .tlv-squad-head h3,
+body.chapter-two .tlv-group-head h3,
+body.chapter-two .tlv-warnings h3 {
+    margin: 0;
+    color: var(--bone);
+    font-family: var(--font-display);
+    font-size: 0.86rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body.chapter-two .tlv-squad-head > span {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+body.chapter-two .tlv-group {
+    margin-top: 12px;
+}
+
+body.chapter-two .tlv-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+body.chapter-two .tlv-group-head h3 {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+}
+
+body.chapter-two .tlv-group-head span {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.62rem;
+}
+
+body.chapter-two .tlv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+    gap: 8px;
+}
+
+body.chapter-two .tlv-player {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--c2-hairline);
+    background: linear-gradient(180deg, rgba(23, 29, 32, 0.92), rgba(14, 17, 19, 0.92));
+}
+
+body.chapter-two .tlv-player.is-bench {
+    border-style: dashed;
+    background: rgba(10, 12, 14, 0.7);
+}
+
+body.chapter-two .tlv-portrait {
+    flex: 0 0 52px;
+    width: 52px;
+    height: 64px;
+    display: grid;
+    place-items: end center;
+    overflow: hidden;
+    border: 1px solid var(--c2-hairline);
+    background:
+        radial-gradient(ellipse at 50% 18%, rgba(160, 174, 179, 0.14), transparent 62%),
+        rgba(6, 7, 8, 0.6);
+    color: var(--c2-fog-faint);
+}
+
+body.chapter-two .tlv-silhouette {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+body.chapter-two .tlv-sil-head {
+    fill: rgba(201, 208, 209, 0.32);
+}
+
+body.chapter-two .tlv-sil-body {
+    fill: rgba(201, 208, 209, 0.2);
+}
+
+body.chapter-two .tlv-sil-shirt {
+    fill: rgba(195, 212, 148, 0.26);
+}
+
+body.chapter-two .tlv-player-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+body.chapter-two .tlv-player-namerow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+}
+
+body.chapter-two .tlv-player-name {
+    color: var(--bone);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    overflow-wrap: anywhere;
+}
+
+body.chapter-two .tlv-marker {
+    flex: 0 0 auto;
+    padding: 1px 4px;
+    border: 1px solid var(--c2-hairline-strong);
+    font-family: var(--c2-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+}
+
+body.chapter-two .tlv-marker.is-captain {
+    color: var(--c2-moss-bright);
+    border-color: rgba(195, 212, 148, 0.55);
+    background: rgba(141, 157, 99, 0.16);
+}
+
+body.chapter-two .tlv-marker.is-vice {
+    color: var(--c2-fog-dim);
+}
+
+body.chapter-two .tlv-position {
+    align-self: flex-start;
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+}
+
+body.chapter-two .tlv-club {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    line-height: 1.3;
+}
+
+body.chapter-two .tlv-club-name {
+    overflow-wrap: anywhere;
+}
+
+body.chapter-two .tlv-badge {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+body.chapter-two .tlv-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 1px;
+}
+
+body.chapter-two .tlv-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+}
+
+body.chapter-two .tlv-stat strong {
+    color: var(--bone);
+    font-family: var(--c2-mono);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+body.chapter-two .tlv-stat small {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+}
+
+body.chapter-two .tlv-warnings {
+    margin-top: 22px;
+    padding: 12px 14px;
+    border: 1px solid var(--c2-hairline);
+    border-left: 2px solid var(--c2-warning-bright);
+    background: rgba(6, 7, 8, 0.38);
+}
+
+body.chapter-two .tlv-warnings ul {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+body.chapter-two .tlv-warnings li {
+    position: relative;
+    padding-left: 12px;
+    margin-top: 4px;
+    color: var(--bone-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    line-height: 1.6;
+}
+
+body.chapter-two .tlv-warnings li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--c2-warning-bright);
+}
+
+body.chapter-two .tlv-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    min-height: 260px;
+    color: var(--c2-fog-dim);
+}
+
+body.chapter-two .tlv-spinner {
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--c2-hairline-strong);
+    border-top-color: var(--c2-moss-bright);
+    border-radius: 50%;
+    animation: tlv-spin 900ms linear infinite;
+}
+
+body.chapter-two .tlv-loading-text {
+    margin: 0;
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+@keyframes tlv-spin {
+    to { transform: rotate(360deg); }
+}
+
+body.chapter-two .tlv-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 480px;
+    margin: 34px auto;
+    padding: 18px;
+    border: 1px solid var(--c2-hairline);
+    border-left: 2px solid var(--c2-hairline-strong);
+    background: rgba(6, 7, 8, 0.42);
+}
+
+body.chapter-two .tlv-state.is-error {
+    border-left-color: var(--c2-warning-bright);
+}
+
+body.chapter-two .tlv-state.is-unavailable {
+    border-left-color: var(--c2-fog-faint);
+}
+
+body.chapter-two .tlv-state h3 {
+    margin: 0;
+    color: var(--bone);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+body.chapter-two .tlv-state p {
+    margin: 0;
+    color: var(--bone-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.7rem;
+    line-height: 1.6;
+}
+
+body.chapter-two .tlv-state-detail {
+    color: var(--c2-fog-dim) !important;
+    font-size: 0.64rem !important;
+    letter-spacing: 0.08em;
+}
+
+body.chapter-two .tlv-retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 10px 16px;
+    border: 1px solid var(--c2-hairline-strong);
+    background: rgba(160, 174, 179, 0.06);
+    color: var(--bone);
+    font-family: var(--c2-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 160ms var(--c2-ease), background 160ms var(--c2-ease);
+}
+
+body.chapter-two .tlv-retry:hover {
+    border-color: var(--c2-moss-bright);
+    background: rgba(141, 157, 99, 0.14);
+}
+
+body.chapter-two .tlv-live-note {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 11px 22px;
+    border-top: 1px solid var(--c2-hairline);
+    background: rgba(6, 7, 8, 0.45);
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: 0.66rem;
+    line-height: 1.6;
+    letter-spacing: 0.04em;
+}
+
+body.chapter-two .tlv-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 900px) {
+    body.chapter-two .tlv-grid {
+        grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    body.chapter-two .tlv-dialog {
+        width: 100vw;
+        height: 100dvh;
+        max-height: none;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+    }
+
+    body.chapter-two .tlv-panel {
+        height: 100%;
+        max-height: 100dvh;
+    }
+
+    body.chapter-two .tlv-head {
+        padding: 16px 16px 12px;
+    }
+
+    body.chapter-two .tlv-participant {
+        font-size: 1.6rem;
+    }
+
+    body.chapter-two .tlv-close {
+        flex-basis: 40px;
+        width: 40px;
+        height: 40px;
+    }
+
+    body.chapter-two .tlv-bar {
+        padding: 9px 16px;
+    }
+
+    body.chapter-two .tlv-body {
+        padding: 14px 14px 18px;
+    }
+
+    body.chapter-two .tlv-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+    }
+
+    body.chapter-two .tlv-player {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 10px 8px;
+    }
+
+    body.chapter-two .tlv-portrait {
+        flex-basis: auto;
+        width: 54px;
+        height: 66px;
+    }
+
+    body.chapter-two .tlv-player-namerow,
+    body.chapter-two .tlv-club,
+    body.chapter-two .tlv-stats {
+        justify-content: center;
+    }
+
+    body.chapter-two .tlv-position {
+        align-self: center;
+    }
+
+    body.chapter-two .tlv-squad-head > span {
+        font-size: 0.62rem;
+    }
+
+    body.chapter-two .tlv-live-note {
+        padding: 10px 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.chapter-two .match-name-trigger,
+    body.chapter-two .tlv-close,
+    body.chapter-two .tlv-retry {
+        transition: none;
+    }
+
+    body.chapter-two .tlv-spinner {
+        animation: none;
+        border-top-color: var(--c2-fog-dim);
+    }
+}
