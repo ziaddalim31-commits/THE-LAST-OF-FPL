@@ -872,7 +872,7 @@ function renderMatchCard(match, number = 0, type = "other") {
         return `
             <div class="match-player state-${stateClass} ${resultClass}" data-player-id="${escapeHTML(player.id)}">
                 <span class="match-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
-                <strong class="match-name" title="${escapeHTML(player.name)}">${escapeHTML(player.name)}</strong>
+                <button type="button" class="match-name match-name-trigger" title="View FPL lineup for ${escapeHTML(player.name)}" aria-haspopup="dialog" data-lineup-player="${escapeHTML(player.id)}">${escapeHTML(player.name)}</button>
                 <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
                 ${isInfectedPlayer(player) ? '<span class="match-infected" role="img" aria-label="Infected">🦠 INFECTED</span>' : ""}
                 ${resultTag}
@@ -1217,7 +1217,589 @@ function startLiveScores() {
 }
 
 // ---------------------------------------------------------
-// 8. STARTUP
+// 8. TEAM LINEUP VIEWER — read-only, fetched on demand
+// ---------------------------------------------------------
+
+const TEAM_LINEUP_ENDPOINT = "/api/team";
+const TEAM_LINEUP_TIMEOUT_MS = 12000;
+const TEAM_LINEUP_SILHOUETTE = `<svg class="tlv-silhouette" viewBox="0 0 64 76" aria-hidden="true" focusable="false"><path class="tlv-sil-head" d="M32 7c6.1 0 11 4.9 11 11s-4.9 11-11 11-11-4.9-11-11S25.9 7 32 7Z"/><path class="tlv-sil-body" d="M32 32c-9.6 0-17.2 5.9-19.5 15.2L9.1 70h11.2l3.2-14.4h17l3.2 14.4h11.2l-3.4-22.8C49.2 37.9 41.6 32 32 32Z"/><path class="tlv-sil-shirt" d="M24.6 35.4 32 40.2l7.4-4.8 5.3 2.6-3.5 6.4L32 48.9l-9.2-4.5-3.5-6.4 5.3-2.6Z"/></svg>`;
+
+const TEAM_LINEUP_CHIPS = {
+    "3xc": "Triple Captain",
+    bboost: "Bench Boost",
+    freehit: "Free Hit",
+    wildcard: "Wildcard"
+};
+
+const teamLineupState = {
+    initialized: false,
+    dialog: null,
+    body: null,
+    participantEl: null,
+    teamEl: null,
+    statusEl: null,
+    metaEl: null,
+    announcer: null,
+    closeButton: null,
+    controller: null,
+    requestId: 0,
+    playerId: null,
+    lastTrigger: null
+};
+
+function makeLineupElement(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined && text !== null) element.textContent = String(text);
+    return element;
+}
+
+function formatLineupStat(value) {
+    if (value === null || value === undefined || value === "") return "—";
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? String(numeric) : "—";
+}
+
+function formatLineupTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    try {
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch (error) {
+        return "";
+    }
+}
+
+function getLineupChipLabel(chip) {
+    if (!chip) return "";
+    return TEAM_LINEUP_CHIPS[chip] || String(chip);
+}
+
+function setLineupStatus(text, tone) {
+    if (!teamLineupState.statusEl) return;
+    teamLineupState.statusEl.textContent = text;
+    teamLineupState.statusEl.dataset.tone = tone || "unknown";
+}
+
+function setLineupMeta(parts) {
+    if (!teamLineupState.metaEl) return;
+    teamLineupState.metaEl.textContent = (parts || []).filter(Boolean).join(" · ");
+}
+
+function announceLineup(message) {
+    if (!teamLineupState.announcer) return;
+    teamLineupState.announcer.textContent = message;
+}
+
+function setLineupHeader(participantName, teamName) {
+    if (teamLineupState.participantEl) {
+        teamLineupState.participantEl.textContent = participantName || "Participant";
+    }
+    if (teamLineupState.teamEl) {
+        teamLineupState.teamEl.textContent = teamName || "";
+    }
+}
+
+function buildLineupPlayerCard(player, isBench) {
+    const record = player && typeof player === "object" ? player : {};
+    const club = record.club && typeof record.club === "object" ? record.club : {};
+    const card = makeLineupElement("article", "tlv-player" + (isBench ? " is-bench" : ""));
+
+    const portrait = makeLineupElement("div", "tlv-portrait");
+    portrait.innerHTML = TEAM_LINEUP_SILHOUETTE;
+
+    const info = makeLineupElement("div", "tlv-player-info");
+
+    const nameRow = makeLineupElement("div", "tlv-player-namerow");
+    const name = makeLineupElement("strong", "tlv-player-name", record.name || record.full_name || "Unknown player");
+    if (record.full_name && record.full_name !== record.name) {
+        name.title = String(record.full_name);
+    }
+    nameRow.appendChild(name);
+
+    if (record.is_captain) {
+        const multiplier = Number(record.multiplier);
+        const hasMultiplier = Number.isFinite(multiplier) && multiplier > 1;
+        const label = hasMultiplier ? `C ×${multiplier}` : "C";
+        const marker = makeLineupElement("span", "tlv-marker is-captain", label);
+        marker.setAttribute("aria-label", hasMultiplier ? `Captain, multiplier ${multiplier}` : "Captain");
+        nameRow.appendChild(marker);
+    } else if (record.is_vice_captain) {
+        const marker = makeLineupElement("span", "tlv-marker is-vice", "VC");
+        marker.setAttribute("aria-label", "Vice-captain");
+        nameRow.appendChild(marker);
+    }
+
+    info.appendChild(nameRow);
+
+    const position = makeLineupElement(
+        "span",
+        "tlv-position",
+        record.position_short || record.position_name || "—"
+    );
+    info.appendChild(position);
+
+    const clubRow = makeLineupElement("div", "tlv-club");
+    if (club.badge_url) {
+        const badge = document.createElement("img");
+        badge.className = "tlv-badge";
+        badge.src = String(club.badge_url);
+        badge.alt = `${club.name || "Club"} badge`;
+        badge.width = 18;
+        badge.height = 18;
+        badge.loading = "lazy";
+        badge.decoding = "async";
+        badge.addEventListener("error", () => badge.remove());
+        clubRow.appendChild(badge);
+    }
+    clubRow.appendChild(
+        makeLineupElement("span", "tlv-club-name", club.name || club.short_name || "Club unavailable")
+    );
+    info.appendChild(clubRow);
+
+    const stats = makeLineupElement("div", "tlv-stats");
+    const points = makeLineupElement("span", "tlv-stat");
+    points.appendChild(makeLineupElement("strong", "", formatLineupStat(record.points)));
+    points.appendChild(makeLineupElement("small", "", "PTS"));
+    if (record.is_captain) {
+        points.title = "Official raw FPL points; the captain multiplier is not included.";
+        points.appendChild(makeLineupElement(
+            "span",
+            "tlv-sr-only",
+            "Official raw points; captain multiplier not included."
+        ));
+    }
+    stats.appendChild(points);
+
+    const minutes = makeLineupElement("span", "tlv-stat");
+    minutes.appendChild(makeLineupElement("strong", "", formatLineupStat(record.minutes)));
+    minutes.appendChild(makeLineupElement("small", "", "MIN"));
+    stats.appendChild(minutes);
+    info.appendChild(stats);
+
+    card.appendChild(portrait);
+    card.appendChild(info);
+    return card;
+}
+
+function buildLineupGroup(label, players) {
+    const section = makeLineupElement("section", "tlv-group");
+    const head = makeLineupElement("div", "tlv-group-head");
+    head.appendChild(makeLineupElement("h3", "", label));
+    head.appendChild(makeLineupElement("span", "", `${players.length}`));
+    section.appendChild(head);
+
+    const grid = makeLineupElement("div", "tlv-grid");
+    players.forEach(player => grid.appendChild(buildLineupPlayerCard(player, false)));
+    section.appendChild(grid);
+    return section;
+}
+
+function buildLineupPlayerList(players, isBench) {
+    const grid = makeLineupElement("div", "tlv-grid" + (isBench ? " is-bench" : ""));
+    players.forEach(player => grid.appendChild(buildLineupPlayerCard(player, isBench)));
+    return grid;
+}
+
+function renderLineupWarnings(warnings) {
+    const list = (warnings || []).filter(item => typeof item === "string" && item.trim());
+    if (!list.length) return null;
+
+    const section = makeLineupElement("section", "tlv-warnings");
+    section.appendChild(makeLineupElement("h3", "", "Data notes"));
+    const ul = document.createElement("ul");
+    list.forEach(item => ul.appendChild(makeLineupElement("li", "", item)));
+    section.appendChild(ul);
+    return section;
+}
+
+function renderTeamLineup(participant, data) {
+    const body = teamLineupState.body;
+    if (!body) return;
+
+    const teamName = data.entry && data.entry.team_name
+        ? String(data.entry.team_name)
+        : "Team name unavailable";
+    setLineupHeader(participant.name, teamName);
+
+    const final = data.final === true || String(data.status || "").toUpperCase() === "FINAL";
+    const xi = Array.isArray(data.xi) ? data.xi : [];
+    const bench = Array.isArray(data.bench) ? data.bench : [];
+
+    setLineupStatus(
+        final ? "FINAL" : "PROVISIONAL",
+        final ? "final" : "provisional"
+    );
+
+    const meta = [];
+    if (data.gw !== null && data.gw !== undefined) meta.push(`GW ${data.gw}`);
+    if (data.formation) meta.push(String(data.formation));
+    const chipLabel = getLineupChipLabel(data.chip);
+    if (chipLabel) meta.push(chipLabel);
+    const updatedAt = formatLineupTime(data.updated_at);
+    if (updatedAt) meta.push(`Updated ${updatedAt}`);
+    if (data.stale) meta.push("Cached data");
+    setLineupMeta(meta);
+
+    const fragment = document.createDocumentFragment();
+
+    fragment.appendChild(makeLineupElement(
+        "p",
+        "tlv-banner " + (final ? "is-final" : "is-provisional"),
+        final
+            ? "FINAL — FPL has checked this gameweek."
+            : "PROVISIONAL — FPL has not finalised this gameweek. Points, bonus and automatic substitutions may still change."
+    ));
+
+    const xiSection = makeLineupElement("section", "tlv-squad");
+    const xiHead = makeLineupElement("div", "tlv-squad-head");
+    xiHead.appendChild(makeLineupElement("h3", "", "Starting XI"));
+    const xiSummary = [`${xi.length} players`];
+    if (data.formation) xiSummary.push(String(data.formation));
+    if (chipLabel) xiSummary.push(chipLabel);
+    xiHead.appendChild(makeLineupElement("span", "", xiSummary.join(" · ")));
+    xiSection.appendChild(xiHead);
+
+    const groupKeys = [
+        { key: "GKP", label: "Goalkeeper" },
+        { key: "DEF", label: "Defenders" },
+        { key: "MID", label: "Midfielders" },
+        { key: "FWD", label: "Forwards" }
+    ];
+    const grouped = new Map(groupKeys.map(group => [group.key, []]));
+    const ungrouped = [];
+
+    xi.forEach(player => {
+        const key = String(player && player.position_short || "").toUpperCase();
+        if (grouped.has(key)) grouped.get(key).push(player);
+        else ungrouped.push(player);
+    });
+
+    groupKeys.forEach(group => {
+        const players = grouped.get(group.key);
+        if (players.length) xiSection.appendChild(buildLineupGroup(group.label, players));
+    });
+    if (ungrouped.length) xiSection.appendChild(buildLineupGroup("Squad", ungrouped));
+    fragment.appendChild(xiSection);
+
+    const benchSection = makeLineupElement("section", "tlv-squad tlv-bench");
+    const benchHead = makeLineupElement("div", "tlv-squad-head");
+    benchHead.appendChild(makeLineupElement("h3", "", "Bench"));
+    benchHead.appendChild(makeLineupElement("span", "", `${bench.length} players · not counted in the tournament LIVE SCORE`));
+    benchSection.appendChild(benchHead);
+    benchSection.appendChild(buildLineupPlayerList(bench, true));
+    fragment.appendChild(benchSection);
+
+    const warnings = renderLineupWarnings(data.warnings);
+    if (warnings) fragment.appendChild(warnings);
+
+    body.setAttribute("aria-busy", "false");
+    body.replaceChildren(fragment);
+    announceLineup(`${participant.name}: ${teamName}. ${xi.length} starters, ${bench.length} bench players.`);
+}
+
+function renderLineupLoading(participant) {
+    const body = teamLineupState.body;
+    if (!body) return;
+
+    setLineupStatus("LOADING", "loading");
+    setLineupMeta([]);
+    body.setAttribute("aria-busy", "true");
+
+    const wrap = makeLineupElement("div", "tlv-loading");
+    const spinner = makeLineupElement("span", "tlv-spinner");
+    spinner.setAttribute("aria-hidden", "true");
+    wrap.appendChild(spinner);
+    wrap.appendChild(makeLineupElement("p", "tlv-loading-text", "Loading FPL lineup…"));
+    body.replaceChildren(wrap);
+    announceLineup(`Loading FPL lineup for ${participant.name}.`);
+}
+
+function renderLineupProblem(options) {
+    const body = teamLineupState.body;
+    if (!body) return;
+
+    setLineupStatus(options.status, options.tone || "unknown");
+    setLineupMeta([]);
+    body.setAttribute("aria-busy", "false");
+
+    const wrap = makeLineupElement("div", "tlv-state " + (options.className || ""));
+    wrap.appendChild(makeLineupElement("h3", "", options.title));
+    wrap.appendChild(makeLineupElement("p", "", options.message));
+    if (options.detail) {
+        wrap.appendChild(makeLineupElement("p", "tlv-state-detail", options.detail));
+    }
+
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "tlv-retry";
+    retry.dataset.tlvRetry = "true";
+    retry.textContent = "Try again";
+    wrap.appendChild(retry);
+
+    body.replaceChildren(wrap);
+    announceLineup(options.announcement || options.title);
+}
+
+async function loadTeamLineup(playerId) {
+    const participant = getPlayerById(playerId);
+    if (!participant || !teamLineupState.dialog) return;
+
+    teamLineupState.playerId = playerId;
+    const requestId = ++teamLineupState.requestId;
+
+    if (teamLineupState.controller) teamLineupState.controller.abort();
+    const controller = new AbortController();
+    teamLineupState.controller = controller;
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, TEAM_LINEUP_TIMEOUT_MS);
+
+    setLineupHeader(participant.name, "Loading FPL team…");
+    renderLineupLoading(participant);
+
+    try {
+        const response = await fetch(
+            `${TEAM_LINEUP_ENDPOINT}?player=${encodeURIComponent(playerId)}`,
+            {
+                headers: { Accept: "application/json" },
+                signal: controller.signal
+            }
+        );
+
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
+        }
+
+        if (requestId !== teamLineupState.requestId) return;
+
+        if (!response.ok || !payload || payload.ok !== true) {
+            const errorCode = payload && payload.error ? String(payload.error) : "";
+            if (response.status === 404 || errorCode === "picks_unavailable") {
+                setLineupHeader(participant.name, "Team name unavailable");
+                renderLineupProblem({
+                    status: "UNAVAILABLE",
+                    tone: "unavailable",
+                    className: "is-unavailable",
+                    title: "Lineup unavailable",
+                    message: "FPL has not published a lineup for this gameweek yet. Please try again later.",
+                    detail: errorCode ? `Reference: ${errorCode}` : `Reference: HTTP ${response.status}`,
+                    announcement: `Lineup unavailable for ${participant.name}.`
+                });
+                return;
+            }
+
+            setLineupHeader(participant.name, "Team name unavailable");
+            renderLineupProblem({
+                status: "ERROR",
+                tone: "error",
+                className: "is-error",
+                title: "Could not load this lineup",
+                message: "The lineup request failed. Check your connection and try again.",
+                detail: errorCode ? `Reference: ${errorCode}` : `Reference: HTTP ${response.status}`,
+                announcement: `Could not load the lineup for ${participant.name}.`
+            });
+            return;
+        }
+
+        const xi = Array.isArray(payload.xi) ? payload.xi : [];
+        const bench = Array.isArray(payload.bench) ? payload.bench : [];
+
+        if (!xi.length && !bench.length) {
+            setLineupHeader(
+                participant.name,
+                payload.entry && payload.entry.team_name ? String(payload.entry.team_name) : "Team name unavailable"
+            );
+            renderLineupProblem({
+                status: "EMPTY",
+                tone: "unavailable",
+                className: "is-unavailable",
+                title: "No lineup available",
+                message: "This team has no published picks for the current gameweek.",
+                detail: "",
+                announcement: `No lineup available for ${participant.name}.`
+            });
+            return;
+        }
+
+        renderTeamLineup(participant, payload);
+    } catch (error) {
+        if (error && error.name === "AbortError") {
+            if (!timedOut) return;
+            if (requestId !== teamLineupState.requestId) return;
+
+            setLineupHeader(participant.name, "Team name unavailable");
+            renderLineupProblem({
+                status: "TIMEOUT",
+                tone: "error",
+                className: "is-error",
+                title: "Request timed out",
+                message: "The lineup request took too long to respond. Check your connection and try again.",
+                detail: "Reference: timeout",
+                announcement: `The lineup request for ${participant.name} timed out.`
+            });
+            return;
+        }
+        if (requestId !== teamLineupState.requestId) return;
+
+        setLineupHeader(participant.name, "Team name unavailable");
+        renderLineupProblem({
+            status: "ERROR",
+            tone: "error",
+            className: "is-error",
+            title: "Could not load this lineup",
+            message: "The lineup request failed. Check your connection and try again.",
+            detail: "Reference: network_error",
+            announcement: `Could not load the lineup for ${participant.name}.`
+        });
+    } finally {
+        clearTimeout(timeoutId);
+        if (requestId === teamLineupState.requestId) {
+            teamLineupState.controller = null;
+            if (teamLineupState.body) teamLineupState.body.setAttribute("aria-busy", "false");
+        }
+    }
+}
+
+function openTeamLineup(playerId, trigger) {
+    const dialog = teamLineupState.dialog;
+    const participant = getPlayerById(playerId);
+    if (!dialog || !participant) return;
+
+    teamLineupState.lastTrigger = trigger || null;
+
+    if (!dialog.open) {
+        dialog.showModal();
+        document.body.classList.add("tlv-modal-open");
+    }
+
+    setLineupHeader(participant.name, "Loading FPL team…");
+    if (teamLineupState.closeButton) {
+        teamLineupState.closeButton.focus({ preventScroll: true });
+    }
+    loadTeamLineup(playerId);
+}
+
+function handleLineupTriggerClick(event) {
+    const target = event.target instanceof Element ? event.target : null;
+    const trigger = target ? target.closest(".match-name-trigger") : null;
+    if (!trigger) return;
+
+    const matchPlayer = trigger.closest(".match-player[data-player-id]");
+    if (!matchPlayer) return;
+
+    const playerId = Number(matchPlayer.dataset.playerId);
+    if (!Number.isInteger(playerId) || playerId < 1 || playerId > 24) return;
+
+    event.preventDefault();
+    openTeamLineup(playerId, trigger);
+}
+
+function handleLineupClose() {
+    // The close event fires asynchronously; if the dialog was reopened in the
+    // meantime this close belongs to the previous open and must not cancel it.
+    if (teamLineupState.dialog && teamLineupState.dialog.open) return;
+
+    if (teamLineupState.controller) {
+        teamLineupState.controller.abort();
+        teamLineupState.controller = null;
+    }
+    teamLineupState.requestId += 1;
+    document.body.classList.remove("tlv-modal-open");
+    if (teamLineupState.body) teamLineupState.body.setAttribute("aria-busy", "false");
+
+    const trigger = teamLineupState.lastTrigger;
+    const playerId = teamLineupState.playerId;
+
+    if (trigger && trigger.isConnected) {
+        trigger.focus({ preventScroll: true });
+    } else if (playerId !== null) {
+        const fallback = document.querySelector(
+            `#page-matchups .match-player[data-player-id="${Number(playerId)}"] .match-name-trigger`
+        );
+        if (fallback) fallback.focus({ preventScroll: true });
+    }
+
+    teamLineupState.playerId = null;
+    teamLineupState.lastTrigger = null;
+}
+
+function closeTeamLineup() {
+    const dialog = teamLineupState.dialog;
+    if (dialog && dialog.open) {
+        dialog.close();
+    } else {
+        document.body.classList.remove("tlv-modal-open");
+    }
+}
+
+function initTeamLineupViewer() {
+    if (teamLineupState.initialized) return;
+
+    const dialog = document.getElementById("team-lineup-dialog");
+    const matchups = document.getElementById("page-matchups");
+    const body = document.getElementById("tlv-body");
+    const participantEl = document.getElementById("tlv-participant-name");
+    const teamEl = document.getElementById("tlv-team-name");
+    const statusEl = document.getElementById("tlv-status");
+    const metaEl = document.getElementById("tlv-meta");
+    const announcer = document.getElementById("tlv-announcer");
+    const closeButton = document.getElementById("tlv-close");
+
+    if (!dialog || !matchups || !body || !participantEl || !teamEl || !statusEl || !closeButton) {
+        console.warn("Team lineup viewer markup is incomplete.");
+        return;
+    }
+
+    teamLineupState.dialog = dialog;
+    teamLineupState.body = body;
+    teamLineupState.participantEl = participantEl;
+    teamLineupState.teamEl = teamEl;
+    teamLineupState.statusEl = statusEl;
+    teamLineupState.metaEl = metaEl;
+    teamLineupState.announcer = announcer;
+    teamLineupState.closeButton = closeButton;
+
+    closeButton.addEventListener("click", closeTeamLineup);
+
+    dialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        closeTeamLineup();
+    });
+
+    dialog.addEventListener("click", event => {
+        if (event.target === dialog) closeTeamLineup();
+    });
+
+    dialog.addEventListener("close", handleLineupClose);
+
+    body.addEventListener("click", event => {
+        const target = event.target instanceof Element ? event.target : null;
+        const retry = target ? target.closest("[data-tlv-retry]") : null;
+        if (!retry) return;
+        event.preventDefault();
+        if (teamLineupState.playerId !== null) {
+            loadTeamLineup(teamLineupState.playerId);
+            if (teamLineupState.closeButton) {
+                teamLineupState.closeButton.focus({ preventScroll: true });
+            }
+        }
+    });
+
+    matchups.addEventListener("click", handleLineupTriggerClick);
+
+    teamLineupState.initialized = true;
+    console.log("Team lineup viewer ready.");
+}
+
+// ---------------------------------------------------------
+// 9. STARTUP
 // ---------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -1236,6 +1818,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await loadGW8Matches();
 
+    initTeamLineupViewer();
     startLiveScores();
 
     document.body.classList.remove("intro-pending");
