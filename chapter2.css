@@ -4464,4 +4464,415 @@ body.chapter-two .tlv-sr-only {
         animation: none;
         border-top-color: var(--c2-fog-dim);
     }
+
+    body.chapter-two .tlv-pcard-img {
+        transition: none;
+    }
+}
+
+/* ---------------------------------------------------------
+   PHASE 3.2 — FPL PITCH LINEUP
+   --------------------------------------------------------- */
+
+body.chapter-two .tlv-pitch-squad {
+    margin-bottom: 4px;
+}
+
+body.chapter-two .tlv-pitch {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 4.5% 0 4%;
+    border: 1px solid rgba(195, 212, 148, 0.26);
+    border-radius: 3px;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.032) 0 8.33%, rgba(0, 0, 0, 0.05) 8.33% 16.66%),
+        radial-gradient(ellipse at 50% 44%, #2a6041 0%, #1e4d34 44%, #11301f 100%);
+    box-shadow:
+        inset 0 0 70px rgba(2, 7, 4, 0.6),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.chapter-two .tlv-pitch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 46%, transparent 48%, rgba(3, 8, 5, 0.4) 100%);
+}
+
+body.chapter-two .tlv-pitch-markings {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    color: rgba(226, 238, 219, 0.32);
+}
+
+body.chapter-two .tlv-mark {
+    position: absolute;
+    border: 1px solid currentColor;
+}
+
+body.chapter-two .tlv-mark.is-outer {
+    inset: 10px;
+}
+
+body.chapter-two .tlv-mark.is-half {
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    height: 0;
+    border-width: 1px 0 0;
+}
+
+body.chapter-two .tlv-mark.is-circle {
+    left: 50%;
+    top: 50%;
+    width: 19%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+}
+
+body.chapter-two .tlv-mark.is-box-top,
+body.chapter-two .tlv-mark.is-box-bottom {
+    left: 22%;
+    right: 22%;
+    height: 15%;
+}
+
+body.chapter-two .tlv-mark.is-box-top {
+    top: 10px;
+    border-top: 0;
+}
+
+body.chapter-two .tlv-mark.is-box-bottom {
+    bottom: 10px;
+    border-bottom: 0;
+}
+
+body.chapter-two .tlv-mark.is-goal-top,
+body.chapter-two .tlv-mark.is-goal-bottom {
+    left: 36%;
+    right: 36%;
+    height: 5.5%;
+}
+
+body.chapter-two .tlv-mark.is-goal-top {
+    top: 10px;
+    border-top: 0;
+}
+
+body.chapter-two .tlv-mark.is-goal-bottom {
+    bottom: 10px;
+    border-bottom: 0;
+}
+
+body.chapter-two .tlv-mark.is-spot-top,
+body.chapter-two .tlv-mark.is-spot-bottom {
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: currentColor;
+    transform: translateX(-50%);
+}
+
+body.chapter-two .tlv-mark.is-spot-top {
+    top: calc(10px + 9%);
+}
+
+body.chapter-two .tlv-mark.is-spot-bottom {
+    bottom: calc(10px + 9%);
+}
+
+body.chapter-two .tlv-pitch-rows {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
+    gap: clamp(14px, 3.4vw, 34px);
+    padding: 0 4%;
+}
+
+body.chapter-two .tlv-pitch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    gap: 1.5%;
+    min-height: 0;
+}
+
+body.chapter-two .tlv-pitch-row[data-line="GKP"] {
+    justify-content: center;
+}
+
+body.chapter-two .tlv-pcard {
+    flex: 0 0 auto;
+    width: 17.4%;
+    max-width: 118px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+body.chapter-two .tlv-pcard.is-bench {
+    width: 100%;
+    max-width: none;
+}
+
+body.chapter-two .tlv-pcard-photo {
+    position: relative;
+    display: grid;
+    place-items: end center;
+    width: 100%;
+    height: clamp(44px, 9.4vw, 74px);
+}
+
+body.chapter-two .tlv-pcard-photo::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 4%;
+    width: 74%;
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(6, 18, 11, 0.55), transparent 70%);
+}
+
+body.chapter-two .tlv-pcard-photo .tlv-silhouette {
+    position: relative;
+    width: 54%;
+    height: 96%;
+    opacity: 0.92;
+    transition: opacity 200ms var(--c2-ease);
+}
+
+body.chapter-two .tlv-pcard-photo .tlv-sil-head {
+    fill: rgba(226, 234, 226, 0.6);
+}
+
+body.chapter-two .tlv-pcard-photo .tlv-sil-body {
+    fill: rgba(226, 234, 226, 0.42);
+}
+
+body.chapter-two .tlv-pcard-photo .tlv-sil-shirt {
+    fill: rgba(195, 212, 148, 0.52);
+}
+
+body.chapter-two .tlv-pcard-photo.has-photo .tlv-silhouette {
+    opacity: 0;
+}
+
+body.chapter-two .tlv-pcard-img {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    opacity: 0;
+    transition: opacity 240ms var(--c2-ease);
+    filter: drop-shadow(0 5px 7px rgba(0, 0, 0, 0.55));
+}
+
+body.chapter-two .tlv-pcard-img.is-loaded {
+    opacity: 1;
+}
+
+body.chapter-two .tlv-pcard-plate {
+    width: 100%;
+    min-width: 0;
+    padding: 3px 3px 3px;
+    border: 1px solid rgba(195, 212, 148, 0.18);
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(8, 12, 9, 0.92), rgba(8, 12, 9, 0.74));
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+body.chapter-two .tlv-pcard-namerow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+}
+
+body.chapter-two .tlv-pcard-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--bone);
+    font-family: var(--font-display);
+    font-size: clamp(0.6rem, 1vw, 0.78rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.chapter-two .tlv-pcard .tlv-marker {
+    flex: 0 0 auto;
+    padding: 0 3px;
+    font-size: clamp(0.4rem, 0.55vw, 0.5rem);
+    line-height: 1.5;
+}
+
+body.chapter-two .tlv-pcard-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 12px;
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: clamp(0.46rem, 0.6vw, 0.54rem);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body.chapter-two .tlv-pcard-badge {
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    object-fit: contain;
+}
+
+body.chapter-two .tlv-pcard-club,
+body.chapter-two .tlv-pcard-position {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.chapter-two .tlv-pcard-position {
+    color: var(--c2-moss-bright);
+}
+
+body.chapter-two .tlv-pcard-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    column-gap: 6px;
+    row-gap: 0;
+    margin-top: 1px;
+}
+
+body.chapter-two .tlv-pcard-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+body.chapter-two .tlv-pcard-stat strong {
+    color: var(--bone);
+    font-family: var(--c2-mono);
+    font-size: clamp(0.62rem, 0.95vw, 0.76rem);
+    font-weight: 600;
+}
+
+body.chapter-two .tlv-pcard-stat small {
+    color: var(--c2-fog-dim);
+    font-family: var(--c2-mono);
+    font-size: clamp(0.46rem, 0.55vw, 0.5rem);
+    letter-spacing: 0.06em;
+}
+
+body.chapter-two .tlv-pcard.is-bench .tlv-pcard-photo {
+    height: clamp(56px, 8.5vw, 84px);
+}
+
+body.chapter-two .tlv-pcard.is-bench .tlv-pcard-plate {
+    padding: 4px 4px;
+}
+
+body.chapter-two .tlv-pcard.is-bench .tlv-pcard-name {
+    font-size: clamp(0.62rem, 0.9vw, 0.8rem);
+}
+
+body.chapter-two .tlv-bench-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+    body.chapter-two .tlv-pitch {
+        padding: 5% 0 4.5%;
+    }
+
+    body.chapter-two .tlv-pitch-rows {
+        padding: 0 3.5%;
+    }
+
+    body.chapter-two .tlv-pcard {
+        width: 18%;
+    }
+
+    body.chapter-two .tlv-pcard-name {
+        font-size: 0.62rem;
+    }
+
+    body.chapter-two .tlv-pcard .tlv-marker {
+        padding: 0 2px;
+        font-size: 0.44rem;
+    }
+
+    body.chapter-two .tlv-pcard-meta {
+        gap: 2px;
+        font-size: 0.48rem;
+    }
+
+    body.chapter-two .tlv-pcard-stat strong {
+        font-size: 0.68rem;
+    }
+
+    body.chapter-two .tlv-pcard-stat small {
+        font-size: 0.46rem;
+    }
+
+    body.chapter-two .tlv-bench-grid {
+        gap: 7px;
+    }
+}
+
+@media (max-width: 420px) {
+    body.chapter-two .tlv-pitch-rows {
+        padding: 0 3%;
+    }
+
+    body.chapter-two .tlv-pcard {
+        width: 18.4%;
+    }
+
+    body.chapter-two .tlv-pcard-photo {
+        height: 42px;
+    }
+
+    body.chapter-two .tlv-pcard-name {
+        font-size: 0.58rem;
+    }
+
+    body.chapter-two .tlv-pcard-plate {
+        padding: 2px 2px;
+    }
+
+    body.chapter-two .tlv-pcard-stat strong {
+        font-size: 0.64rem;
+    }
 }
