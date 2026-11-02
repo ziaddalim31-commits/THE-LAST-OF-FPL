@@ -746,6 +746,27 @@
         </div>
     </footer>
 
+    <!-- TEAM LINEUP VIEWER -->
+    <dialog id="team-lineup-dialog" class="tlv-dialog" aria-labelledby="tlv-participant-name">
+        <div class="tlv-panel">
+            <header class="tlv-head">
+                <div class="tlv-head-copy">
+                    <span class="tlv-kicker">FPL Team Lineup</span>
+                    <h2 class="tlv-participant" id="tlv-participant-name">Participant</h2>
+                    <p class="tlv-team" id="tlv-team-name">Loading FPL team…</p>
+                </div>
+                <button type="button" class="tlv-close" id="tlv-close" aria-label="Close lineup">&times;</button>
+            </header>
+            <div class="tlv-bar">
+                <span class="tlv-status" id="tlv-status" data-tone="loading">LOADING</span>
+                <span class="tlv-meta" id="tlv-meta"></span>
+            </div>
+            <div class="tlv-body" id="tlv-body" aria-busy="false"></div>
+            <p class="tlv-live-note">Official FPL points and minutes for the gameweek above. Points are raw FPL points; the captain multiplier is shown as a marker and is not added. Separate from the tournament&rsquo;s LIVE SCORE calculation.</p>
+            <p class="tlv-sr-only" id="tlv-announcer" role="status" aria-live="polite"></p>
+        </div>
+    </dialog>
+
   <!-- Supabase library -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
