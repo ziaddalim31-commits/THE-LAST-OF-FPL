@@ -1301,69 +1301,144 @@ function setLineupHeader(participantName, teamName) {
     }
 }
 
-function buildLineupPlayerCard(player, isBench) {
-    const record = player && typeof player === "object" ? player : {};
-    const club = record.club && typeof record.club === "object" ? record.club : {};
-    const card = makeLineupElement("article", "tlv-player" + (isBench ? " is-bench" : ""));
+function createLineupBadge(club, className) {
+    const record = club && typeof club === "object" ? club : {};
+    if (!record.badge_url) return null;
 
-    const portrait = makeLineupElement("div", "tlv-portrait");
-    portrait.innerHTML = TEAM_LINEUP_SILHOUETTE;
+    const badge = document.createElement("img");
+    badge.className = className || "tlv-pcard-badge";
+    badge.src = String(record.badge_url);
+    badge.alt = "";
+    badge.width = 12;
+    badge.height = 12;
+    badge.loading = "lazy";
+    badge.decoding = "async";
+    badge.addEventListener("error", () => badge.remove());
+    return badge;
+}
 
-    const info = makeLineupElement("div", "tlv-player-info");
-
-    const nameRow = makeLineupElement("div", "tlv-player-namerow");
-    const name = makeLineupElement("strong", "tlv-player-name", record.name || record.full_name || "Unknown player");
-    if (record.full_name && record.full_name !== record.name) {
-        name.title = String(record.full_name);
-    }
-    nameRow.appendChild(name);
-
+function buildLineupMarker(record) {
     if (record.is_captain) {
         const multiplier = Number(record.multiplier);
         const hasMultiplier = Number.isFinite(multiplier) && multiplier > 1;
         const label = hasMultiplier ? `C ×${multiplier}` : "C";
         const marker = makeLineupElement("span", "tlv-marker is-captain", label);
         marker.setAttribute("aria-label", hasMultiplier ? `Captain, multiplier ${multiplier}` : "Captain");
-        nameRow.appendChild(marker);
-    } else if (record.is_vice_captain) {
+        return marker;
+    }
+
+    if (record.is_vice_captain) {
         const marker = makeLineupElement("span", "tlv-marker is-vice", "VC");
         marker.setAttribute("aria-label", "Vice-captain");
-        nameRow.appendChild(marker);
+        return marker;
     }
 
-    info.appendChild(nameRow);
+    return null;
+}
 
-    const position = makeLineupElement(
-        "span",
-        "tlv-position",
-        record.position_short || record.position_name || "—"
-    );
-    info.appendChild(position);
+function getLineupPhotoSources(record) {
+    const sources = [];
+    const current = record && record.photo_url ? String(record.photo_url) : "";
+    const previous = record && record.photo_url_previous ? String(record.photo_url_previous) : "";
 
-    const clubRow = makeLineupElement("div", "tlv-club");
-    if (club.badge_url) {
-        const badge = document.createElement("img");
-        badge.className = "tlv-badge";
-        badge.src = String(club.badge_url);
-        badge.alt = `${club.name || "Club"} badge`;
-        badge.width = 18;
-        badge.height = 18;
-        badge.loading = "lazy";
-        badge.decoding = "async";
-        badge.addEventListener("error", () => badge.remove());
-        clubRow.appendChild(badge);
+    if (current) sources.push(current);
+    if (previous && previous !== current) sources.push(previous);
+    return sources;
+}
+
+function attachLineupPhoto(portrait, record, eager) {
+    const sources = getLineupPhotoSources(record);
+    portrait.dataset.photoState = sources.length ? "loading" : "fallback";
+
+    if (!sources.length) return;
+
+    const img = document.createElement("img");
+    img.className = "tlv-pcard-img";
+    img.alt = "";
+    img.decoding = "async";
+    img.loading = eager ? "eager" : "lazy";
+    img.draggable = false;
+
+    let sourceIndex = 0;
+    let settled = false;
+
+    img.addEventListener("load", () => {
+        if (settled) return;
+        settled = true;
+        img.classList.add("is-loaded");
+        portrait.classList.add("has-photo");
+        portrait.dataset.photoState = "loaded";
+    });
+
+    img.addEventListener("error", () => {
+        if (settled) return;
+        sourceIndex += 1;
+        if (sourceIndex < sources.length) {
+            img.src = sources[sourceIndex];
+            return;
+        }
+        settled = true;
+        img.remove();
+        portrait.dataset.photoState = "fallback";
+    });
+
+    portrait.appendChild(img);
+    img.src = sources[0];
+}
+
+function buildLineupPitchCard(player, options) {
+    const record = player && typeof player === "object" ? player : {};
+    const club = record.club && typeof record.club === "object" ? record.club : {};
+    const isBench = Boolean(options && options.bench);
+    const nameText = record.name || record.full_name || "Unknown player";
+
+    const card = makeLineupElement("article", "tlv-pcard" + (isBench ? " is-bench" : ""));
+
+    const portrait = makeLineupElement("div", "tlv-pcard-photo");
+    portrait.innerHTML = TEAM_LINEUP_SILHOUETTE;
+    attachLineupPhoto(portrait, record, !isBench);
+    card.appendChild(portrait);
+
+    const plate = makeLineupElement("div", "tlv-pcard-plate");
+
+    const nameRow = makeLineupElement("div", "tlv-pcard-namerow");
+    const name = makeLineupElement("strong", "tlv-pcard-name", nameText);
+    name.title = String(record.full_name || nameText);
+    nameRow.appendChild(name);
+
+    const marker = buildLineupMarker(record);
+    if (marker) nameRow.appendChild(marker);
+    plate.appendChild(nameRow);
+
+    const metaRow = makeLineupElement("div", "tlv-pcard-meta");
+    const badge = createLineupBadge(club);
+    if (badge) metaRow.appendChild(badge);
+
+    if (isBench) {
+        const position = makeLineupElement(
+            "span",
+            "tlv-pcard-position",
+            record.position_short || record.position_name || "—"
+        );
+        if (record.position_name) position.title = String(record.position_name);
+        metaRow.appendChild(position);
+    } else {
+        metaRow.appendChild(makeLineupElement(
+            "span",
+            "tlv-pcard-club",
+            club.short_name || club.name || "Club"
+        ));
     }
-    clubRow.appendChild(
-        makeLineupElement("span", "tlv-club-name", club.name || club.short_name || "Club unavailable")
-    );
-    info.appendChild(clubRow);
+    plate.appendChild(metaRow);
 
-    const stats = makeLineupElement("div", "tlv-stats");
-    const points = makeLineupElement("span", "tlv-stat");
+    const stats = makeLineupElement("div", "tlv-pcard-stats");
+    const points = makeLineupElement("span", "tlv-pcard-stat");
     points.appendChild(makeLineupElement("strong", "", formatLineupStat(record.points)));
     points.appendChild(makeLineupElement("small", "", "PTS"));
+    points.title = record.is_captain
+        ? "Official raw FPL points; the captain multiplier is not included."
+        : "Official FPL points";
     if (record.is_captain) {
-        points.title = "Official raw FPL points; the captain multiplier is not included.";
         points.appendChild(makeLineupElement(
             "span",
             "tlv-sr-only",
@@ -1372,34 +1447,62 @@ function buildLineupPlayerCard(player, isBench) {
     }
     stats.appendChild(points);
 
-    const minutes = makeLineupElement("span", "tlv-stat");
+    const minutes = makeLineupElement("span", "tlv-pcard-stat");
     minutes.appendChild(makeLineupElement("strong", "", formatLineupStat(record.minutes)));
     minutes.appendChild(makeLineupElement("small", "", "MIN"));
+    minutes.title = "Official FPL minutes played";
     stats.appendChild(minutes);
-    info.appendChild(stats);
+    plate.appendChild(stats);
 
-    card.appendChild(portrait);
-    card.appendChild(info);
+    card.appendChild(plate);
     return card;
 }
 
-function buildLineupGroup(label, players) {
-    const section = makeLineupElement("section", "tlv-group");
-    const head = makeLineupElement("div", "tlv-group-head");
-    head.appendChild(makeLineupElement("h3", "", label));
-    head.appendChild(makeLineupElement("span", "", `${players.length}`));
-    section.appendChild(head);
+function buildLineupPitch(xi, formation) {
+    const pitch = makeLineupElement("div", "tlv-pitch");
+    pitch.setAttribute("role", "group");
+    pitch.setAttribute(
+        "aria-label",
+        `Starting XI pitch${formation ? `, formation ${formation}` : ""}`
+    );
 
-    const grid = makeLineupElement("div", "tlv-grid");
-    players.forEach(player => grid.appendChild(buildLineupPlayerCard(player, false)));
-    section.appendChild(grid);
-    return section;
-}
+    const markings = makeLineupElement("div", "tlv-pitch-markings");
+    markings.setAttribute("aria-hidden", "true");
+    ["outer", "half", "circle", "spot-top", "spot-bottom", "box-top", "box-bottom", "goal-top", "goal-bottom"]
+        .forEach(mark => markings.appendChild(makeLineupElement("span", `tlv-mark is-${mark}`)));
+    pitch.appendChild(markings);
 
-function buildLineupPlayerList(players, isBench) {
-    const grid = makeLineupElement("div", "tlv-grid" + (isBench ? " is-bench" : ""));
-    players.forEach(player => grid.appendChild(buildLineupPlayerCard(player, isBench)));
-    return grid;
+    const rows = makeLineupElement("div", "tlv-pitch-rows");
+    const lineKeys = ["GKP", "DEF", "MID", "FWD"];
+    const lines = new Map(lineKeys.map(key => [key, []]));
+    const ungrouped = [];
+
+    xi.forEach(player => {
+        const key = String(player && player.position_short || "").toUpperCase();
+        if (lines.has(key)) lines.get(key).push(player);
+        else ungrouped.push(player);
+    });
+
+    lineKeys.forEach(key => {
+        const players = lines.get(key);
+        if (!players.length) return;
+
+        const row = makeLineupElement("div", "tlv-pitch-row");
+        row.dataset.line = key;
+        if (key === "GKP") row.classList.add("is-keeper");
+        players.forEach(player => row.appendChild(buildLineupPitchCard(player)));
+        rows.appendChild(row);
+    });
+
+    if (ungrouped.length) {
+        const row = makeLineupElement("div", "tlv-pitch-row");
+        row.dataset.line = "OTHER";
+        ungrouped.forEach(player => row.appendChild(buildLineupPitchCard(player)));
+        rows.appendChild(row);
+    }
+
+    pitch.appendChild(rows);
+    return pitch;
 }
 
 function renderLineupWarnings(warnings) {
@@ -1452,7 +1555,7 @@ function renderTeamLineup(participant, data) {
             : "PROVISIONAL — FPL has not finalised this gameweek. Points, bonus and automatic substitutions may still change."
     ));
 
-    const xiSection = makeLineupElement("section", "tlv-squad");
+    const xiSection = makeLineupElement("section", "tlv-squad tlv-pitch-squad");
     const xiHead = makeLineupElement("div", "tlv-squad-head");
     xiHead.appendChild(makeLineupElement("h3", "", "Starting XI"));
     const xiSummary = [`${xi.length} players`];
@@ -1461,26 +1564,7 @@ function renderTeamLineup(participant, data) {
     xiHead.appendChild(makeLineupElement("span", "", xiSummary.join(" · ")));
     xiSection.appendChild(xiHead);
 
-    const groupKeys = [
-        { key: "GKP", label: "Goalkeeper" },
-        { key: "DEF", label: "Defenders" },
-        { key: "MID", label: "Midfielders" },
-        { key: "FWD", label: "Forwards" }
-    ];
-    const grouped = new Map(groupKeys.map(group => [group.key, []]));
-    const ungrouped = [];
-
-    xi.forEach(player => {
-        const key = String(player && player.position_short || "").toUpperCase();
-        if (grouped.has(key)) grouped.get(key).push(player);
-        else ungrouped.push(player);
-    });
-
-    groupKeys.forEach(group => {
-        const players = grouped.get(group.key);
-        if (players.length) xiSection.appendChild(buildLineupGroup(group.label, players));
-    });
-    if (ungrouped.length) xiSection.appendChild(buildLineupGroup("Squad", ungrouped));
+    xiSection.appendChild(buildLineupPitch(xi, data.formation));
     fragment.appendChild(xiSection);
 
     const benchSection = makeLineupElement("section", "tlv-squad tlv-bench");
@@ -1488,7 +1572,10 @@ function renderTeamLineup(participant, data) {
     benchHead.appendChild(makeLineupElement("h3", "", "Bench"));
     benchHead.appendChild(makeLineupElement("span", "", `${bench.length} players · not counted in the tournament LIVE SCORE`));
     benchSection.appendChild(benchHead);
-    benchSection.appendChild(buildLineupPlayerList(bench, true));
+
+    const benchGrid = makeLineupElement("div", "tlv-bench-grid");
+    bench.forEach(player => benchGrid.appendChild(buildLineupPitchCard(player, { bench: true })));
+    benchSection.appendChild(benchGrid);
     fragment.appendChild(benchSection);
 
     const warnings = renderLineupWarnings(data.warnings);
@@ -1496,7 +1583,9 @@ function renderTeamLineup(participant, data) {
 
     body.setAttribute("aria-busy", "false");
     body.replaceChildren(fragment);
-    announceLineup(`${participant.name}: ${teamName}. ${xi.length} starters, ${bench.length} bench players.`);
+    announceLineup(
+        `${participant.name}: ${teamName}. ${xi.length} starters${data.formation ? ` in a ${data.formation} formation` : ""}, ${bench.length} bench players.`
+    );
 }
 
 function renderLineupLoading(participant) {
