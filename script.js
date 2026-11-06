@@ -67,9 +67,6 @@ let matchesLoadedFromDatabase = false;
 let gw8PointsLoaded = false;
 const gw8PointsByPlayerId = new Map();
 
-// Manually curated infected list. Never derived from DANGER state or hearts.
-const INFECTED_ROSTER = ["Wld Lhaj", "Abdellah Moghtanim", "Abdelghafour", "Fatima"];
-
 // Display-only heart overrides for MATCHES and STANDINGS; nothing is written to the database.
 const HEARTS_DISPLAY_OVERRIDES = {
     [normalizePlayerName("Moulchi")]: 3
@@ -149,9 +146,7 @@ function normalizePlayerName(value) {
 }
 
 function isInfectedPlayer(player) {
-    const name = normalizePlayerName(player?.name);
-
-    return name !== "" && INFECTED_ROSTER.some(entry => normalizePlayerName(entry) === name);
+    return player?.is_infected === true;
 }
 
 function getThreatStatus(player) {
@@ -257,7 +252,7 @@ async function loadPlayersFromSupabase() {
 
     const { data, error } = await client
         .from("players")
-        .select("id, name, status, hearts")
+        .select("id, name, status, hearts, is_infected")
         .order("name", { ascending: true });
 
     if (error) {
@@ -285,6 +280,7 @@ async function loadPlayersFromSupabase() {
                 0,
                 Math.min(3, Number(player.hearts ?? fallback?.hearts ?? 3))
             ),
+            is_infected: player.is_infected === true,
             // Legacy reference points; GW8 scores load separately from matches.
             points: fallback ? fallback.points : 0
         };
@@ -516,21 +512,29 @@ function renderInfected() {
     const container = document.getElementById("infectedDossier");
     const totalElement = document.getElementById("infectedTotal");
 
+    const cases = roster.filter(isInfectedPlayer);
+    const caseCount = String(cases.length).padStart(2, "0");
+
     if (totalElement) {
-        totalElement.textContent = String(INFECTED_ROSTER.length).padStart(2, "0");
+        totalElement.textContent = caseCount;
     }
 
-    if (!container) return;
+    const sectorCount = document.getElementById("sectorInfected");
+    if (sectorCount) sectorCount.textContent = caseCount;
 
-    const cases = INFECTED_ROSTER
-        .map(name => roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(name)))
-        .filter(Boolean);
+    const registryCount = document.getElementById("infectedRegistry");
+    if (registryCount) registryCount.textContent = `Manual \u00b7 ${caseCount} Names`;
+
+    const caseRange = document.getElementById("infectedCaseRange");
+    if (caseRange) caseRange.textContent = `BIOHAZARD // CASE FILES 01\u2013${caseCount}`;
+
+    if (!container) return;
 
     if (cases.length === 0) {
         container.innerHTML = `
             <div class="c2-infected-empty">
                 <span class="c2-label">No case files</span>
-                <p>The player registry is not available yet. The confirmed infected list is unchanged.</p>
+                <p>No infected players are currently recorded in the player database.</p>
             </div>
         `;
         return;
@@ -577,7 +581,7 @@ function renderInfected() {
                     </div>
                 </dl>
                 <footer class="c2-infected-card-foot">
-                    <span>Registry // Manual</span>
+                    <span>Registry // Supabase</span>
                     <span>Confirmed</span>
                 </footer>
             </article>
