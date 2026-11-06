@@ -1,12 +1,13 @@
 "use strict";
 
 // THE LAST OF FPL — Live Match Centre, Phase 1A
-// Read-only proxy for Fantasy Premier League. GW9 only.
+// Read-only proxy for Fantasy Premier League. Any valid gameweek 1–38.
 // No Supabase client, no credentials, no writes of any kind.
 
 const FPL_LINKS = require("../data/fpl-links.json");
 
-const GW = 9;
+const GW_MIN = 1;
+const GW_MAX = 38;
 const FPL_BASE = "https://fantasy.premierleague.com/api";
 const LIVE_TTL_MS = 45 * 1000;
 const PICKS_TTL_MS = 15 * 60 * 1000;
@@ -17,9 +18,9 @@ const PICK_CONCURRENCY = 4;
 const PICK_GAP_MS = 180;
 
 const cache = {
-    live: { at: 0, elements: null },
-    picks: { byEntry: new Map() },
-    events: { at: 0, event: null }
+    live: new Map(),
+    picks: new Map(),
+    events: { at: 0, data: null }
 };
 
 const USER_AGENT =
@@ -56,35 +57,60 @@ async function fplFetch(path, deadline) {
     }
 }
 
-async function getEvent(deadline) {
+function parseGameweek(value) {
+    if (value === null || value === undefined) return null;
+
+    const text = String(value).trim();
+    if (!text) return null;
+
+    const numeric = Number(text);
+    if (!Number.isInteger(numeric) || numeric < GW_MIN || numeric > GW_MAX) {
+        return NaN;
+    }
+
+    return numeric;
+}
+
+async function getEvents(deadline) {
     const now = Date.now();
-    if (cache.events.event && now - cache.events.at < EVENTS_TTL_MS) {
-        return { ok: true, data: cache.events.event, stale: false };
+    if (cache.events.data && now - cache.events.at < EVENTS_TTL_MS) {
+        return { ok: true, data: cache.events.data, stale: false };
     }
 
     const result = await fplFetch("/events/", deadline);
     if (!result.ok) {
-        if (cache.events.event) return { ok: true, data: cache.events.event, stale: true };
+        if (cache.events.data) return { ok: true, data: cache.events.data, stale: true };
         return result;
     }
 
-    const event = Array.isArray(result.data) ? result.data.find(item => item.id === GW) : null;
-    if (!event) return { ok: false, status: 502, error: "gameweek_not_found" };
-
-    cache.events = { at: now, event };
-    return { ok: true, data: event, stale: false };
+    const data = Array.isArray(result.data) ? result.data : [];
+    cache.events = { at: now, data };
+    return { ok: true, data, stale: false };
 }
 
-async function getLiveElements(deadline) {
+function chooseCurrentEvent(events) {
+    if (!Array.isArray(events) || events.length === 0) return null;
+
+    return (
+        events.find(event => event.is_current === true) ||
+        events.find(event => event.is_next === true) ||
+        events.filter(event => event.finished === false).sort((a, b) => a.id - b.id)[0] ||
+        events.slice().sort((a, b) => b.id - a.id)[0] ||
+        null
+    );
+}
+
+async function getLiveElements(gw, deadline) {
     const now = Date.now();
-    if (cache.live.elements && now - cache.live.at < LIVE_TTL_MS) {
-        return { ok: true, elements: cache.live.elements, at: cache.live.at, stale: false };
+    const cached = cache.live.get(gw);
+    if (cached && now - cached.at < LIVE_TTL_MS) {
+        return { ok: true, elements: cached.elements, at: cached.at, stale: false };
     }
 
-    const result = await fplFetch(`/event/${GW}/live/`, deadline);
+    const result = await fplFetch(`/event/${gw}/live/`, deadline);
     if (!result.ok) {
-        if (cache.live.elements) {
-            return { ok: true, elements: cache.live.elements, at: cache.live.at, stale: true };
+        if (cached) {
+            return { ok: true, elements: cached.elements, at: cached.at, stale: true };
         }
         return result;
     }
@@ -98,34 +124,35 @@ async function getLiveElements(deadline) {
         });
     }
 
-    cache.live = { at: now, elements };
+    cache.live.set(gw, { at: now, elements });
     return { ok: true, elements, at: now, stale: false };
 }
 
-async function getPicks(entryId, deadline) {
-    const cached = cache.picks.byEntry.get(entryId);
+async function getPicks(entryId, gw, deadline) {
+    const key = `${entryId}:${gw}`;
+    const cached = cache.picks.get(key);
     if (cached && Date.now() - cached.at < PICKS_TTL_MS) {
         return { ok: true, data: cached.data, stale: false };
     }
 
-    const result = await fplFetch(`/entry/${entryId}/event/${GW}/picks/`, deadline);
+    const result = await fplFetch(`/entry/${entryId}/event/${gw}/picks/`, deadline);
     if (!result.ok) {
         if (cached) return { ok: true, data: cached.data, stale: true };
         return result;
     }
 
-    cache.picks.byEntry.set(entryId, { at: Date.now(), data: result.data });
+    cache.picks.set(key, { at: Date.now(), data: result.data });
     return { ok: true, data: result.data, stale: false };
 }
 
-async function getAllPicks(entryIds, deadline) {
+async function getAllPicks(entryIds, gw, deadline) {
     const results = new Map();
     const queue = entryIds.slice();
 
     const workers = Array.from({ length: Math.min(PICK_CONCURRENCY, queue.length) }, async () => {
         while (queue.length) {
             const entryId = queue.shift();
-            results.set(entryId, await getPicks(entryId, deadline));
+            results.set(entryId, await getPicks(entryId, gw, deadline));
             await sleep(PICK_GAP_MS);
         }
     });
@@ -196,8 +223,13 @@ module.exports = async function handler(req, res) {
         requestedGw = null;
     }
 
-    if (requestedGw && String(requestedGw) !== String(GW)) {
-        return send(res, 400, { ok: false, error: "only_gw9_supported", gw: GW });
+    const gwParam = parseGameweek(requestedGw);
+    if (Number.isNaN(gwParam)) {
+        return send(res, 400, {
+            ok: false,
+            error: "invalid_gameweek",
+            detail: `Gameweek must be an integer between ${GW_MIN} and ${GW_MAX}.`
+        });
     }
 
     if (!FPL_LINKS || typeof FPL_LINKS !== "object") {
@@ -206,17 +238,41 @@ module.exports = async function handler(req, res) {
 
     const deadline = Date.now() + TOTAL_BUDGET_MS;
 
-    const [eventResult, liveResult] = await Promise.all([
-        getEvent(deadline),
-        getLiveElements(deadline)
-    ]);
+    const eventsResult = await getEvents(deadline);
+    let event = null;
+    let gw = gwParam;
+
+    if (gw === null) {
+        if (!eventsResult.ok) {
+            return send(res, 503, {
+                ok: false,
+                error: "gameweek_unavailable",
+                detail: eventsResult.error || "unknown"
+            });
+        }
+
+        event = chooseCurrentEvent(eventsResult.data);
+        if (!event) {
+            return send(res, 503, { ok: false, error: "gameweek_not_found" });
+        }
+
+        gw = event.id;
+    } else if (eventsResult.ok) {
+        event = eventsResult.data.find(item => Number(item.id) === gw) || null;
+
+        if (!event) {
+            return send(res, 404, { ok: false, error: "gameweek_not_found", gw });
+        }
+    }
+
+    const liveResult = await getLiveElements(gw, deadline);
 
     if (!liveResult.ok) {
         return send(res, 503, {
             ok: false,
             error: "live_data_unavailable",
             detail: liveResult.error || "unknown",
-            gw: GW
+            gw
         });
     }
 
@@ -225,10 +281,14 @@ module.exports = async function handler(req, res) {
         entryId: FPL_LINKS[playerId]
     }));
 
-    const picksResults = await getAllPicks(entries.map(entry => entry.entryId), deadline);
+    const picksResults = await getAllPicks(
+        entries.map(entry => entry.entryId),
+        gw,
+        deadline
+    );
 
     const players = {};
-    let stale = Boolean(liveResult.stale);
+    let stale = Boolean(liveResult.stale || eventsResult.stale);
 
     for (const { playerId, entryId } of entries) {
         const picksResult = picksResults.get(entryId);
@@ -254,12 +314,12 @@ module.exports = async function handler(req, res) {
         };
     }
 
-    const status = deriveStatus(eventResult.ok ? eventResult.data : null);
+    const status = deriveStatus(event);
 
     send(res, 200, {
         ok: true,
         phase: "1A",
-        gw: GW,
+        gw,
         status,
         provisional: true,
         stale,

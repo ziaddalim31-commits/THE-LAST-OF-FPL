@@ -4876,3 +4876,129 @@ body.chapter-two .tlv-bench-grid {
         font-size: 0.64rem;
     }
 }
+
+/* =========================================================================
+   14. PHASE 2 REPAIR — data status, live error, bye dossier
+   ========================================================================= */
+
+body.chapter-two .data-status {
+    padding: 10px 18px;
+    border-bottom: 1px solid rgba(224, 87, 75, 0.42);
+    background: linear-gradient(90deg, rgba(224, 87, 75, 0.12), rgba(6, 8, 9, 0.6));
+    color: var(--danger);
+    font-family: var(--c2-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    line-height: 1.5;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+body.chapter-two #page-matchups .match-live-meta.is-error {
+    border-left-color: var(--danger);
+    background: linear-gradient(90deg, rgba(224, 87, 75, 0.1), rgba(6, 8, 9, 0.55) 45%);
+    opacity: 1;
+}
+
+body.chapter-two #page-matchups .match-live-meta.is-error .live-dot {
+    background: var(--danger);
+    box-shadow: 0 0 8px rgba(224, 87, 75, 0.6);
+    animation: none;
+}
+
+body.chapter-two #page-matchups .match-live-meta.is-error .live-label {
+    color: var(--danger);
+}
+
+body.chapter-two #page-matchups .match-bye-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 0 14px;
+    border: 1px solid var(--c2-hairline);
+    border-left: 2px solid rgba(223, 176, 91, 0.55);
+    border-radius: 1px;
+    background:
+        repeating-linear-gradient(135deg, transparent 0 26px, rgba(160, 174, 179, 0.014) 26px 27px),
+        linear-gradient(180deg, rgba(16, 20, 22, 0.96), rgba(7, 9, 10, 0.98));
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
+}
+
+body.chapter-two #page-matchups .match-bye-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--c2-hairline);
+    background:
+        repeating-linear-gradient(90deg, rgba(160, 174, 179, 0.045) 0 1px, transparent 1px 18px),
+        rgba(6, 8, 9, 0.55);
+}
+
+body.chapter-two #page-matchups .match-badge.bye {
+    border-color: var(--normal-line);
+    background: rgba(223, 176, 91, 0.08);
+    color: var(--normal);
+}
+
+body.chapter-two #page-matchups .match-bye-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 14px;
+}
+
+body.chapter-two #page-matchups .match-bye-id {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+body.chapter-two #page-matchups .match-bye-name {
+    font-size: clamp(1.1rem, 1.4vw, 1.3rem);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--c2-fog);
+    line-height: 1.05;
+}
+
+body.chapter-two #page-matchups .match-bye-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+body.chapter-two #page-matchups .match-bye-tags .status {
+    padding: 3px 8px;
+    border-radius: 1px;
+    font-family: var(--c2-mono);
+    font-size: 0.54rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+}
+
+body.chapter-two #page-matchups .match-bye-note {
+    margin: 0;
+    padding: 0 14px;
+    color: var(--c2-fog-faint);
+    font-family: var(--c2-mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    line-height: 1.6;
+    text-transform: uppercase;
+}
+
+@media (max-width: 430px) {
+    body.chapter-two .data-status {
+        padding: 9px 12px;
+        font-size: 0.56rem;
+        letter-spacing: 0.1em;
+    }
+
+    body.chapter-two #page-matchups .match-bye-body {
+        gap: 10px;
+    }
+}

@@ -56,6 +56,8 @@
         </div>
     </header>
 
+    <div id="dataStatus" class="data-status" role="status" aria-live="polite" hidden></div>
+
     <!-- PAGE 1: HOME -->
     <main id="page-home" class="tab-page active">
         <section class="hero-section">
@@ -94,11 +96,11 @@
                                 </div>
                                 <div class="sector-row">
                                     <dt>Infected</dt>
-                                    <dd id="sectorInfected">02</dd>
+                                    <dd id="sectorInfected">&mdash;</dd>
                                 </div>
                                 <div class="sector-row">
                                     <dt>Hearts</dt>
-                                    <dd>59</dd>
+                                    <dd id="sectorHearts">&mdash;</dd>
                                 </div>
                                 <div class="sector-row">
                                     <dt>Active Phase</dt>
@@ -127,19 +129,19 @@
                     </div>
                     <div class="stats-hub hero-ledger">
                         <div class="stat-card safe-border">
-                            <span class="stat-num" data-stat="safe">10</span>
-                            <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(42%)</span></span>
+                            <span class="stat-num" data-stat="safe">&mdash;</span>
+                            <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(&mdash;%)</span></span>
                         </div>
                         <div class="stat-card normal-border">
-                            <span class="stat-num" data-stat="normal">4</span>
-                            <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(17%)</span></span>
+                            <span class="stat-num" data-stat="normal">&mdash;</span>
+                            <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(&mdash;%)</span></span>
                         </div>
                         <div class="stat-card danger-border">
-                            <span class="stat-num" data-stat="danger">10</span>
-                            <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(42%)</span></span>
+                            <span class="stat-num" data-stat="danger">&mdash;</span>
+                            <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(&mdash;%)</span></span>
                         </div>
                         <div class="stat-card elim-border">
-                            <span class="stat-num" data-stat="eliminated">0</span>
+                            <span class="stat-num" data-stat="eliminated">&mdash;</span>
                             <span class="stat-lbl">ELIMINATED</span>
                         </div>
                     </div>
@@ -156,7 +158,7 @@
                     </div>
                     <div class="telemetry-cell">
                         <span class="telemetry-key">Survivors</span>
-                        <span class="telemetry-val"><span data-stat="active">24</span> Active</span>
+                        <span class="telemetry-val"><span data-stat="active">&mdash;</span> Active</span>
                     </div>
                     <div class="telemetry-cell telemetry-signal">
                         <span class="telemetry-key">Signal</span>
@@ -345,10 +347,10 @@
                 </div>
                 <aside class="c2-case-meter" aria-label="Confirmed infected count">
                     <span class="c2-label">Case Counter</span>
-                    <p class="c2-case-total"><span id="infectedTotal">02</span></p>
+                    <p class="c2-case-total"><span id="infectedTotal">&mdash;</span></p>
                     <p class="c2-case-caption">Confirmed Infected</p>
                     <dl class="c2-case-meta">
-                        <div><dt>Registry</dt><dd id="infectedRegistry">Manual &middot; 02 Names</dd></div>
+                        <div><dt>Registry</dt><dd id="infectedRegistry">&mdash;</dd></div>
                         <div><dt>Sector</dt><dd>02 // GW9&ndash;GW14</dd></div>
                         <div><dt>Watch</dt><dd>Active</dd></div>
                     </dl>
@@ -357,7 +359,7 @@
 
             <div class="c2-infected-notice" role="note">
                 <span class="c2-hazard-bar" aria-hidden="true"></span>
-                <span class="c2-notice-code" id="infectedCaseRange">BIOHAZARD // CASE FILES 01&ndash;02</span>
+                <span class="c2-notice-code" id="infectedCaseRange">BIOHAZARD // CASE FILES</span>
                 <span class="c2-notice-text">Confirmed cases only &mdash; a heart count or DANGER tag never adds a case.</span>
             </div>
 
@@ -409,15 +411,15 @@
         <div class="container">
             <div class="page-title-bar">
                 <div class="page-title-block">
-                    <span class="page-kicker">Registry // GW8 Results</span>
-                    <h2>GW8 STANDINGS &amp; STATUS</h2>
-                    <p class="page-title-note">Field order by current state • Chapter I complete</p>
+                    <span class="page-kicker" id="standingsKicker">Registry // Current</span>
+                    <h2 id="standingsTitle">CURRENT STANDINGS &amp; STATUS</h2>
+                    <p class="page-title-note" id="standingsSubtitle">Field order by current state • Live registry</p>
                 </div>
                 <div class="filter-group">
-                    <button class="f-btn active" data-filter="ALL" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (24)</button>
-                    <button class="f-btn" data-filter="SAFE" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (10)</button>
-                    <button class="f-btn" data-filter="NORMAL" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (4)</button>
-                    <button class="f-btn" data-filter="DANGER" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (10)</button>
+                    <button class="f-btn active" data-filter="ALL" aria-pressed="true" onclick="filterStandings('ALL', this)">ALL (&mdash;)</button>
+                    <button class="f-btn" data-filter="SAFE" aria-pressed="false" onclick="filterStandings('SAFE', this)">SAFE (&mdash;)</button>
+                    <button class="f-btn" data-filter="NORMAL" aria-pressed="false" onclick="filterStandings('NORMAL', this)">NORMAL (&mdash;)</button>
+                    <button class="f-btn" data-filter="DANGER" aria-pressed="false" onclick="filterStandings('DANGER', this)">DANGER (&mdash;)</button>
                 </div>
             </div>
 
@@ -434,14 +436,14 @@
                 <span class="search-hint" id="searchHint">Live results</span>
             </div>
 
-            <div class="glass-table-wrapper" role="region" aria-label="GW8 standings — verified match points" tabindex="0">
+            <div class="glass-table-wrapper" role="region" aria-label="Tournament standings — verified match points" tabindex="0">
                 <table class="survival-table">
                     <thead>
                         <tr>
                             <th scope="col">Rank</th>
                             <th scope="col">Participant</th>
                             <th scope="col">Current State</th>
-                            <th scope="col">GW8 Pts</th>
+                            <th scope="col"><span id="standingsPointsHeader">PTS</span></th>
                             <th scope="col">Hearts</th>
                             <th scope="col">Threat</th>
                         </tr>
@@ -450,57 +452,57 @@
                 </table>
             </div>
             <p class="standings-note" id="standingsPointsNote">
-                Survivors are grouped SAFE → NORMAL → DANGER. Points are verified GW8 scores from the 12 completed matches.
+                Survivors are grouped SAFE → NORMAL → DANGER. Points load from the latest completed gameweek.
             </p>
 
             <section class="survivor-dossier" aria-labelledby="survivorDossierTitle">
                 <div class="dossier-head">
                     <div>
-                        <span class="dossier-kicker">Field Registry // GW8</span>
+                        <span class="dossier-kicker" id="dossierKicker">Field Registry</span>
                         <h3 class="dossier-title" id="survivorDossierTitle">SURVIVOR DOSSIER</h3>
                     </div>
-                    <p class="dossier-count" id="survivorDossierCount" aria-live="polite">24 SURVIVORS DISPLAYED</p>
+                    <p class="dossier-count" id="survivorDossierCount" aria-live="polite">&mdash; SURVIVORS DISPLAYED</p>
                 </div>
                 <div class="survivor-grid" id="survivorCards"></div>
             </section>
         </div>
     </main>
 
-    <!-- PAGE 5: GW9 MATCHUPS -->
+    <!-- PAGE 5: CURRENT GAMEWEEK MATCHUPS -->
     <main id="page-matchups" class="tab-page">
         <div class="container">
-            <span class="page-kicker">Pairings // GW9</span>
-            <h2 class="section-heading text-left">GW9 — OFFICIAL MATCHUPS</h2>
-            <p class="sub-heading" id="matchupSummary">Quarantine Zone Battles — 10 SAFE vs DANGER • 2 NORMAL vs NORMAL • 12 Matches</p>
+            <span class="page-kicker" id="matchupsKicker">Pairings // Current Gameweek</span>
+            <h2 class="section-heading text-left" id="matchupsTitle">CURRENT GAMEWEEK — MATCHUPS</h2>
+            <p class="sub-heading" id="matchupSummary">Loading current fixtures&hellip;</p>
 
             <div class="matchups-legend" aria-label="Survival state legend">
                 <span class="legend-item"><span class="legend-dot safe" aria-hidden="true"></span>SAFE</span>
                 <span class="legend-item"><span class="legend-dot normal" aria-hidden="true"></span>NORMAL</span>
                 <span class="legend-item"><span class="legend-dot danger" aria-hidden="true"></span>DANGER</span>
                 <span class="legend-item"><span class="legend-emoji" aria-hidden="true">🦠</span>INFECTED</span>
-                <span class="legend-note">GW9 fixtures — awaiting results</span>
+                <span class="legend-note" id="matchupsLegendNote">Fixtures — awaiting results</span>
             </div>
 
             <div class="groups-layout">
                 <div class="group-column">
                     <div class="grp-header grp-a">
                         <span class="grp-title">
-                            <span class="grp-chip safe">SAFE</span>
-                            <span class="grp-vs">VS</span>
-                            <span class="grp-chip danger">DANGER</span>
+                            <span class="grp-chip safe">GW</span>
+                            <span class="grp-vs">//</span>
+                            <span class="grp-chip danger">MATCHES</span>
                         </span>
-                        <span class="grp-count">10 MATCHES</span>
+                        <span class="grp-count">&mdash; MATCHES</span>
                     </div>
                     <div class="match-list" id="groupA-list"></div>
                 </div>
                 <div class="group-column">
                     <div class="grp-header grp-b">
                         <span class="grp-title">
-                            <span class="grp-chip normal">NORMAL</span>
-                            <span class="grp-vs">VS</span>
-                            <span class="grp-chip normal">NORMAL</span>
+                            <span class="grp-chip normal">BYE</span>
+                            <span class="grp-vs">//</span>
+                            <span class="grp-chip normal">NO MATCH</span>
                         </span>
-                        <span class="grp-count">2 MATCHES</span>
+                        <span class="grp-count">&mdash; SURVIVORS</span>
                     </div>
                     <div class="match-list" id="groupB-list"></div>
                 </div>

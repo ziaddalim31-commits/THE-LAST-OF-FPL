@@ -22,71 +22,26 @@ const liveState = {
 };
 
 // ---------------------------------------------------------
-// 1. FALLBACK PLAYER DATA
-// Used only if Supabase cannot load the players.
-// Legacy GW6 reference points are retained here but are never shown as current points.
+// 1. RUNTIME STATE
+// Every player, gameweek, match and bye value comes from Supabase.
+// If a query fails the UI shows an explicit unavailable state; no
+// stale roster, fixture list or heart override is substituted.
 // ---------------------------------------------------------
 
-const fallbackRoster = [
-    { name: "Saad", state: "NORMAL", points: 59, hearts: 3 },
-    { name: "Yougito", state: "NORMAL", points: 61, hearts: 3 },
-    { name: "Islam", state: "SAFE", points: 56, hearts: 3 },
-    { name: "Ayman", state: "SAFE", points: 88, hearts: 3 },
-    { name: "Adnane Elkhamayry", state: "NORMAL", points: 68, hearts: 3 },
-    { name: "Abdennour", state: "NORMAL", points: 59, hearts: 3 },
-    { name: "Zakaria", state: "SAFE", points: 51, hearts: 3 },
-    { name: "Fatima", state: "DANGER", points: 70, hearts: 2 },
-    { name: "Ismail Hadrani", state: "SAFE", points: 48, hearts: 3 },
-    { name: "Wld Lhaj", state: "DANGER", points: 69, hearts: 2 },
-    { name: "Ayoub Abouzar", state: "DANGER", points: 77, hearts: 3 },
-    { name: "Meryem", state: "SAFE", points: 81, hearts: 3 },
-    { name: "Ayoub", state: "DANGER", points: 68, hearts: 3 },
-    { name: "Moulchi", state: "SAFE", points: 82, hearts: 2 },
-    { name: "Anas", state: "DANGER", points: 62, hearts: 3 },
-    { name: "Youness Oukhiya", state: "SAFE", points: 73, hearts: 3 },
-    { name: "Nezar", state: "SAFE", points: 74, hearts: 3 },
-    { name: "Nexus", state: "DANGER", points: 65, hearts: 3 },
-    { name: "Abdellah Moghtanim", state: "DANGER", points: 97, hearts: 2 },
-    { name: "Ahmed", state: "NORMAL", points: 61, hearts: 3 },
-    { name: "Arbi", state: "NORMAL", points: 49, hearts: 3 },
-    { name: "Abdelghafour", state: "DANGER", points: 50, hearts: 2 },
-    { name: "Adnane", state: "NORMAL", points: 70, hearts: 3 },
-    { name: "Abdel Chipi", state: "NORMAL", points: 54, hearts: 1 }
-];
-
-const roster = fallbackRoster.map((player, index) => ({
-    ...player,
-    id: `fallback-${index + 1}`
-}));
+const roster = [];
 
 let activeStatusFilter = "ALL";
 let activeSearch = "";
 let currentMatches = [];
+let currentGameweek = null;
+let currentGameweekBye = null;
+let latestCompletedGameweek = null;
 let playersLoadedFromDatabase = false;
 let matchesLoadedFromDatabase = false;
-let gw8PointsLoaded = false;
-const gw8PointsByPlayerId = new Map();
-
-// Display-only heart overrides for MATCHES and STANDINGS; nothing is written to the database.
-const HEARTS_DISPLAY_OVERRIDES = {
-    [normalizePlayerName("Moulchi")]: 3
-};
-
-// GW9 official pairings, rendered locally; no results exist yet.
-const GW9_MATCHUPS = [
-    ["Islam", "Wld Lhaj"],
-    ["Zakaria", "Abdellah Moghtanim"],
-    ["Meryem", "Ahmed"],
-    ["Ismail Hadrani", "Abdelghafour"],
-    ["Youness Oukhiya", "Fatima"],
-    ["Nezar", "Arbi"],
-    ["Saad", "Yougito"],
-    ["Adnane", "Ayoub"],
-    ["Abdel Chipi", "Adnane Elkhamayry"],
-    ["Abdennour", "Nexus"],
-    ["Ayman", "Moulchi"],
-    ["Ayoub Abouzar", "Anas"]
-];
+let gwPointsLoaded = false;
+let gwPointsGameweek = null;
+let dataError = null;
+const gwPointsByPlayerId = new Map();
 
 const STATUS_ORDER = {
     SAFE: 0,
@@ -122,9 +77,7 @@ function getPlayerHearts(player) {
 }
 
 function getDisplayHearts(player) {
-    const override = HEARTS_DISPLAY_OVERRIDES[normalizePlayerName(player?.name)];
-
-    return Number.isFinite(override) ? override : getPlayerHearts(player);
+    return getPlayerHearts(player);
 }
 
 function isEliminated(player) {
@@ -139,10 +92,6 @@ function getDisplayState(player) {
 
 function getStateClass(player) {
     return getDisplayState(player).toLowerCase();
-}
-
-function normalizePlayerName(value) {
-    return String(value || "").trim().toLowerCase();
 }
 
 function isInfectedPlayer(player) {
@@ -169,22 +118,48 @@ function getThreatTone(player) {
     return normalizeStatus(player.state).toLowerCase();
 }
 
-function getReferencePoints(player) {
-    const points = Number(player.points);
-
-    return Number.isFinite(points) ? points : 0;
-}
-
-function getGW8Points(player) {
-    const points = gw8PointsByPlayerId.get(String(player.id));
+function getGameweekPoints(player) {
+    const points = gwPointsByPlayerId.get(String(player.id));
 
     return Number.isFinite(points) ? points : null;
 }
 
-function formatGW8Points(player) {
-    const points = getGW8Points(player);
+function formatGameweekPoints(player) {
+    const points = getGameweekPoints(player);
 
     return points === null ? "—" : String(points);
+}
+
+function getCurrentGwLabel() {
+    return currentGameweek ? `GW${currentGameweek.gw_number}` : "GW";
+}
+
+function getPointsGwLabel() {
+    return gwPointsGameweek ? `GW${gwPointsGameweek.gw_number}` : "PTS";
+}
+
+function getPointsHeaderLabel() {
+    return gwPointsGameweek ? `GW${gwPointsGameweek.gw_number} Pts` : "Pts";
+}
+
+function setDataError(message) {
+    dataError = message || "Tournament registry unavailable.";
+    const banner = document.getElementById("dataStatus");
+
+    if (banner) {
+        banner.textContent = dataError;
+        banner.hidden = false;
+    }
+}
+
+function clearDataError() {
+    dataError = null;
+    const banner = document.getElementById("dataStatus");
+
+    if (banner) {
+        banner.textContent = "";
+        banner.hidden = true;
+    }
 }
 
 function getInitials(name) {
@@ -234,65 +209,55 @@ function publishDebugState() {
     window.matchesLoadedFromDatabase = matchesLoadedFromDatabase;
     window.activeStatusFilter = activeStatusFilter;
     window.activeSearch = activeSearch;
-    window.gw8PointsLoaded = gw8PointsLoaded;
-    window.gw8PointsByPlayerId = Object.fromEntries(gw8PointsByPlayerId);
+    window.currentGameweek = currentGameweek;
+    window.currentGameweekBye = currentGameweekBye;
+    window.latestCompletedGameweek = latestCompletedGameweek;
+    window.gwPointsLoaded = gwPointsLoaded;
+    window.gwPointsGameweek = gwPointsGameweek;
+    window.gwPointsByPlayerId = Object.fromEntries(gwPointsByPlayerId);
+    window.dataError = dataError;
 }
 
 // ---------------------------------------------------------
-// 2. LOAD PLAYERS FROM SUPABASE
+// 2. LOAD PLAYERS, GAMEWEEKS, MATCHES AND BYES FROM SUPABASE
 // ---------------------------------------------------------
 
 async function loadPlayersFromSupabase() {
     const client = window.supabaseClient;
 
     if (!client) {
-        console.warn("Supabase client is unavailable. Using fallback players.");
+        setDataError("Supabase client is unavailable. Player data cannot be loaded.");
         return false;
     }
 
     const { data, error } = await client
         .from("players")
-        .select("id, name, status, hearts, is_infected")
+        .select("id, name, status, hearts, is_infected, is_active")
         .order("name", { ascending: true });
 
     if (error) {
-        console.error("Could not load players:", error.message);
+        console.warn("Could not load players:", error.message);
+        setDataError("Could not load players from Supabase. Player values are unavailable.");
         return false;
     }
 
-    const fallbackByName = new Map(
-        fallbackRoster.map(player => [
-            player.name.trim().toLowerCase(),
-            player
-        ])
-    );
-
-    const loadedPlayers = (data || []).map(player => {
-        const fallback = fallbackByName.get(
-            String(player.name || "").trim().toLowerCase()
-        );
-
-        return {
-            id: player.id,
-            name: player.name || "Unknown player",
-            state: normalizeStatus(player.status),
-            hearts: Math.max(
-                0,
-                Math.min(3, Number(player.hearts ?? fallback?.hearts ?? 3))
-            ),
-            is_infected: player.is_infected === true,
-            // Legacy reference points; GW8 scores load separately from matches.
-            points: fallback ? fallback.points : 0
-        };
-    });
+    const loadedPlayers = (data || []).map(player => ({
+        id: player.id,
+        name: player.name || "Unknown player",
+        state: normalizeStatus(player.status),
+        hearts: Math.max(0, Math.min(3, Number(player.hearts) || 0)),
+        is_infected: player.is_infected === true,
+        is_active: player.is_active === true
+    }));
 
     if (loadedPlayers.length === 0) {
-        console.warn("Supabase returned no players. Keeping fallback data.");
+        setDataError("The player registry is empty.");
         return false;
     }
 
     roster.splice(0, roster.length, ...loadedPlayers);
     playersLoadedFromDatabase = true;
+    clearDataError();
 
     publishDebugState();
     console.log(`Players loaded from Supabase: ${roster.length}`);
@@ -300,37 +265,90 @@ async function loadPlayersFromSupabase() {
     return true;
 }
 
-async function loadGW8PointsFromSupabase() {
+async function loadGameweeksFromSupabase() {
     const client = window.supabaseClient;
 
     if (!client) {
-        console.warn("Supabase client is unavailable. GW8 points cannot be loaded.");
-        return false;
+        setDataError("Supabase client is unavailable. Gameweek data cannot be loaded.");
+        return null;
     }
+
+    const { data, error } = await client
+        .from("gameweeks")
+        .select("id, gw_number, chapter, status")
+        .order("gw_number", { ascending: true });
+
+    if (error) {
+        console.warn("Could not load gameweeks:", error.message);
+        setDataError("Could not load the gameweek registry. Fixtures and points are unavailable.");
+        return null;
+    }
+
+    return (data || []).map(gameweek => ({
+        ...gameweek,
+        status: String(gameweek.status || "").toUpperCase()
+    }));
+}
+
+function pickCurrentGameweek(gameweeks) {
+    const list = Array.isArray(gameweeks) ? gameweeks : [];
+    const pending = list
+        .filter(gameweek => gameweek.status === "PENDING")
+        .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
+
+    if (pending.length) return pending[0];
+
+    const completed = list
+        .filter(gameweek => gameweek.status === "COMPLETED")
+        .sort((a, b) => Number(b.gw_number) - Number(a.gw_number));
+
+    return completed[0] || null;
+}
+
+function pickLatestCompletedGameweek(gameweeks) {
+    const completed = (Array.isArray(gameweeks) ? gameweeks : [])
+        .filter(gameweek => gameweek.status === "COMPLETED")
+        .sort((a, b) => Number(b.gw_number) - Number(a.gw_number));
+
+    return completed[0] || null;
+}
+
+async function loadGameweekPoints(gameweek) {
+    const client = window.supabaseClient;
+
+    if (!client || !gameweek) return false;
 
     const { data, error } = await client
         .from("matches")
         .select("id, player_a_id, player_b_id, points_a, points_b, status")
-        .eq("gameweek_id", 6)
+        .eq("gameweek_id", gameweek.id)
         .order("id", { ascending: true });
 
     if (error) {
-        console.error("Could not load GW8 points:", error.message);
+        console.warn("Could not load gameweek points:", error.message);
         return false;
     }
 
     const matches = data || [];
+    const allCompleted = matches.length > 0 && matches.every(
+        match => String(match.status || "").toUpperCase() === "COMPLETED"
+    );
+
+    if (!allCompleted) {
+        console.warn("Gameweek points are not final; standings points remain unavailable.", {
+            gameweek: gameweek.gw_number,
+            matches: matches.length
+        });
+        return false;
+    }
+
     const scores = new Map();
-    const appearances = new Map();
 
     matches.forEach(match => {
         [
             [match.player_a_id, match.points_a],
             [match.player_b_id, match.points_b]
         ].forEach(([playerId, points]) => {
-            const key = String(playerId);
-            appearances.set(key, (appearances.get(key) || 0) + 1);
-
             if (
                 points === null ||
                 points === undefined ||
@@ -340,48 +358,92 @@ async function loadGW8PointsFromSupabase() {
                 return;
             }
 
-            scores.set(key, Number(points));
+            scores.set(String(playerId), Number(points));
         });
     });
 
-    const rosterIds = roster.map(player => String(player.id));
-    const complete =
-        matches.length === 12 &&
-        matches.every(match => String(match.status || "").toUpperCase() === "COMPLETED") &&
-        rosterIds.length === 24 &&
-        new Set(rosterIds).size === 24 &&
-        rosterIds.every(playerId =>
-            appearances.get(playerId) === 1 && scores.has(playerId)
-        ) &&
-        scores.size === 24 &&
-        [...scores.keys()].every(playerId => rosterIds.includes(playerId));
+    gwPointsByPlayerId.clear();
+    scores.forEach((points, playerId) => gwPointsByPlayerId.set(playerId, points));
+    gwPointsGameweek = gameweek;
+    gwPointsLoaded = scores.size > 0;
 
-    if (!complete) {
-        console.warn("GW8 points are incomplete; standings points remain unavailable.", {
-            matches: matches.length,
-            mappedScores: scores.size,
-            rosterSize: rosterIds.length
-        });
+    publishDebugState();
+    console.log(
+        `GW${gameweek.gw_number} points loaded for ${scores.size} players from ${matches.length} completed matches.`
+    );
+
+    return gwPointsLoaded;
+}
+
+async function loadCurrentGameweekMatches() {
+    const client = window.supabaseClient;
+
+    if (!client || !currentGameweek) {
+        currentMatches = [];
+        currentGameweekBye = null;
+        matchesLoadedFromDatabase = false;
         return false;
     }
 
-    gw8PointsByPlayerId.clear();
-    scores.forEach((points, playerId) => gw8PointsByPlayerId.set(playerId, points));
-    gw8PointsLoaded = true;
+    const gameweekId = currentGameweek.id;
 
+    const [matchesResult, byesResult] = await Promise.all([
+        client
+            .from("matches")
+            .select("id, gameweek_id, player_a_id, player_b_id, points_a, points_b, winner_id, status")
+            .eq("gameweek_id", gameweekId)
+            .order("id", { ascending: true }),
+        client
+            .from("gameweek_byes")
+            .select("id, gameweek_id, player_id")
+            .eq("gameweek_id", gameweekId)
+    ]);
+
+    if (matchesResult.error || byesResult.error) {
+        console.warn("Could not load current gameweek fixtures.", {
+            matches: matchesResult.error?.message || null,
+            byes: byesResult.error?.message || null
+        });
+        setDataError(`Could not load fixtures for GW${currentGameweek.gw_number}.`);
+        currentMatches = [];
+        currentGameweekBye = null;
+        matchesLoadedFromDatabase = false;
+        publishDebugState();
+        return false;
+    }
+
+    currentMatches = (matchesResult.data || []).map(match => ({
+        ...match,
+        gw_number: currentGameweek.gw_number
+    }));
+
+    const bye = (byesResult.data || [])[0] || null;
+    currentGameweekBye = bye
+        ? {
+            ...bye,
+            player: getPlayerById(bye.player_id)
+        }
+        : null;
+
+    matchesLoadedFromDatabase = true;
     publishDebugState();
-    console.log(`GW8 points loaded for ${scores.size} players from ${matches.length} completed matches.`);
+
+    console.log(
+        `GW${currentGameweek.gw_number}: ${currentMatches.length} matches, ${currentGameweekBye ? 1 : 0} bye.`
+    );
 
     return true;
 }
 
-function syncGW8PointsNote() {
+function syncPointsNote() {
     const note = document.getElementById("standingsPointsNote");
     if (!note) return;
 
-    note.textContent = gw8PointsLoaded
-        ? "Survivors are grouped SAFE → NORMAL → DANGER. Points are verified GW8 scores from the 12 completed matches."
-        : "Survivors are grouped SAFE → NORMAL → DANGER. GW8 scores are currently unavailable.";
+    const label = getPointsGwLabel();
+
+    note.textContent = gwPointsLoaded
+        ? `Survivors are grouped SAFE → NORMAL → DANGER. Points are verified ${label} scores from the latest completed gameweek.`
+        : `Survivors are grouped SAFE → NORMAL → DANGER. ${label} scores are currently unavailable.`;
 }
 
 // ---------------------------------------------------------
@@ -428,8 +490,8 @@ function renderStandings(players = roster) {
                 <td class="cell-state" data-label="Current state">
                     <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
                 </td>
-                <td class="cell-points" data-label="GW8 points">
-                    <strong>${formatGW8Points(player)}</strong>
+                <td class="cell-points" data-label="${escapeHTML(getPointsGwLabel())} points">
+                    <strong>${formatGameweekPoints(player)}</strong>
                     <span class="unit">PTS</span>
                 </td>
                 <td class="cell-hearts" data-label="Hearts">
@@ -490,7 +552,7 @@ function renderSurvivorCards(players = roster) {
                     <span class="survivor-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
                     <div class="survivor-id">
                         <h3 class="survivor-name">${escapeHTML(player.name)}</h3>
-                        <p class="survivor-points"><strong>${formatGW8Points(player)}</strong> GW8 PTS</p>
+                        <p class="survivor-points"><strong>${formatGameweekPoints(player)}</strong> ${escapeHTML(getPointsGwLabel())} PTS</p>
                     </div>
                 </div>
                 <div class="survivor-vitals">
@@ -513,7 +575,8 @@ function renderInfected() {
     const totalElement = document.getElementById("infectedTotal");
 
     const cases = roster.filter(isInfectedPlayer);
-    const caseCount = String(cases.length).padStart(2, "0");
+    const loaded = playersLoadedFromDatabase;
+    const caseCount = loaded ? String(cases.length).padStart(2, "0") : "—";
 
     if (totalElement) {
         totalElement.textContent = caseCount;
@@ -523,12 +586,30 @@ function renderInfected() {
     if (sectorCount) sectorCount.textContent = caseCount;
 
     const registryCount = document.getElementById("infectedRegistry");
-    if (registryCount) registryCount.textContent = `Supabase \u00b7 ${caseCount} Names`;
+    if (registryCount) {
+        registryCount.textContent = loaded
+            ? `Supabase \u00b7 ${caseCount} Names`
+            : "Supabase \u00b7 unavailable";
+    }
 
     const caseRange = document.getElementById("infectedCaseRange");
-    if (caseRange) caseRange.textContent = `BIOHAZARD // CASE FILES 01\u2013${caseCount}`;
+    if (caseRange) {
+        caseRange.textContent = loaded
+            ? `BIOHAZARD // CASE FILES 01\u2013${caseCount}`
+            : "BIOHAZARD // CASE FILES";
+    }
 
     if (!container) return;
+
+    if (!loaded) {
+        container.innerHTML = `
+            <div class="c2-infected-empty">
+                <span class="c2-label">Registry unavailable</span>
+                <p>Infected player records could not be loaded from Supabase.</p>
+            </div>
+        `;
+        return;
+    }
 
     if (cases.length === 0) {
         container.innerHTML = `
@@ -572,8 +653,8 @@ function renderInfected() {
                         </dd>
                     </div>
                     <div class="c2-infected-row">
-                        <dt>GW8 Points</dt>
-                        <dd><strong class="c2-infected-pts">${formatGW8Points(player)}</strong><span class="unit">PTS</span></dd>
+                        <dt>${escapeHTML(getPointsGwLabel())} Points</dt>
+                        <dd><strong class="c2-infected-pts">${formatGameweekPoints(player)}</strong><span class="unit">PTS</span></dd>
                     </div>
                     <div class="c2-infected-row">
                         <dt>Threat</dt>
@@ -601,16 +682,18 @@ function syncSearchClear() {
 function syncFilterLabels() {
     const stateCounts = {
         ALL: roster.length,
-        SAFE: roster.filter(player => player.state === "SAFE").length,
-        NORMAL: roster.filter(player => player.state === "NORMAL").length,
-        DANGER: roster.filter(player => player.state === "DANGER").length
+        SAFE: roster.filter(player => getDisplayState(player) === "SAFE").length,
+        NORMAL: roster.filter(player => getDisplayState(player) === "NORMAL").length,
+        DANGER: roster.filter(player => getDisplayState(player) === "DANGER").length
     };
 
     document.querySelectorAll("[data-filter]").forEach(button => {
         const key = button.dataset.filter;
         if (!(key in stateCounts)) return;
 
-        button.textContent = `${key} (${stateCounts[key]})`;
+        button.textContent = playersLoadedFromDatabase
+            ? `${key} (${stateCounts[key]})`
+            : `${key} (—)`;
     });
 }
 
@@ -638,7 +721,7 @@ function filterStandings(status = null, button = null) {
         const matchesSearch = player.name.toLowerCase().includes(activeSearch);
         const matchesStatus =
             activeStatusFilter === "ALL" ||
-            player.state === activeStatusFilter;
+            getDisplayState(player) === activeStatusFilter;
 
         return matchesSearch && matchesStatus;
     });
@@ -649,7 +732,9 @@ function filterStandings(status = null, button = null) {
 
     const count = document.getElementById("survivorDossierCount");
     if (count) {
-        count.textContent = `${filtered.length} ${filtered.length === 1 ? "SURVIVOR" : "SURVIVORS"} DISPLAYED`;
+        count.textContent = playersLoadedFromDatabase
+            ? `${filtered.length} ${filtered.length === 1 ? "SURVIVOR" : "SURVIVORS"} DISPLAYED`
+            : "— SURVIVORS DISPLAYED";
     }
 
     publishDebugState();
@@ -697,23 +782,27 @@ function initPlayerSearch() {
 // ---------------------------------------------------------
 
 function syncJourneyLedger() {
-    const safeCount = roster.filter(p => p.state === "SAFE").length;
-    const normalCount = roster.filter(p => p.state === "NORMAL").length;
-    const dangerCount = roster.filter(p => p.state === "DANGER").length;
-    const eliminatedCount = roster.filter(p => p.hearts <= 0).length;
-    const activePlayers = roster.length - eliminatedCount;
+    const loaded = playersLoadedFromDatabase;
+    const safeCount = roster.filter(p => getDisplayState(p) === "SAFE").length;
+    const normalCount = roster.filter(p => getDisplayState(p) === "NORMAL").length;
+    const dangerCount = roster.filter(p => getDisplayState(p) === "DANGER").length;
+    const eliminatedCount = roster.filter(isEliminated).length;
+    const infectedCount = roster.filter(isInfectedPlayer).length;
+    const activePlayers = roster.filter(p => p.is_active === true).length;
+    const heartsTotal = roster.reduce((total, player) => total + getPlayerHearts(player), 0);
 
     const metrics = {
         safeCount,
         normalCount,
         dangerCount,
         eliminatedCount,
-        activePlayers
+        activePlayers,
+        heartsTotal
     };
 
     Object.entries(metrics).forEach(([id, value]) => {
         const element = document.getElementById(id);
-        if (element) element.textContent = value;
+        if (element) element.textContent = loaded ? value : "—";
     });
 
     const dataStats = {
@@ -722,14 +811,18 @@ function syncJourneyLedger() {
         danger: dangerCount,
         eliminated: eliminatedCount,
         active: activePlayers,
+        infected: infectedCount,
         total: roster.length
     };
 
     Object.entries(dataStats).forEach(([key, value]) => {
         document.querySelectorAll(`[data-stat="${key}"]`).forEach(element => {
-            element.textContent = value;
+            element.textContent = loaded ? value : "—";
         });
     });
+
+    const sectorHearts = document.getElementById("sectorHearts");
+    if (sectorHearts) sectorHearts.textContent = loaded ? heartsTotal : "—";
 
     const percentages = {
         safe: safeCount,
@@ -739,16 +832,48 @@ function syncJourneyLedger() {
 
     Object.entries(percentages).forEach(([key, value]) => {
         const percentage = roster.length === 0
-            ? 0
+            ? null
             : Math.round((value / roster.length) * 100);
 
         document.querySelectorAll(`[data-stat-pct="${key}"]`).forEach(element => {
-            element.textContent = `(${percentage}%)`;
+            element.textContent = loaded && percentage !== null
+                ? `(${percentage}%)`
+                : "(—%)";
         });
     });
 
     syncFilterLabels();
     publishDebugState();
+}
+
+function syncPageLabels() {
+    const gwLabel = getCurrentGwLabel();
+    const kicker = document.getElementById("standingsKicker");
+    const subtitle = document.getElementById("standingsSubtitle");
+    const pointsHeader = document.getElementById("standingsPointsHeader");
+    const dossierKicker = document.getElementById("dossierKicker");
+
+    if (kicker) {
+        kicker.textContent = currentGameweek
+            ? `Registry // ${gwLabel}`
+            : "Registry // Current";
+    }
+
+    if (subtitle) {
+        subtitle.textContent = currentGameweek
+            ? `Field order by current state • ${gwLabel} ${String(currentGameweek.status || "").toLowerCase()}`
+            : "Field order by current state • Registry unavailable";
+    }
+
+    if (pointsHeader) {
+        pointsHeader.textContent = getPointsHeaderLabel();
+    }
+
+    if (dossierKicker) {
+        dossierKicker.textContent = gwPointsGameweek
+            ? `Field Registry // ${getPointsGwLabel()} Points`
+            : "Field Registry";
+    }
 }
 
 // ---------------------------------------------------------
@@ -886,7 +1011,7 @@ function renderMatchCard(match, number = 0, type = "other") {
                     </span>
                     <span class="match-points ${formattedPoints.pending ? "is-pending" : ""}">
                         <strong>${escapeHTML(formattedPoints.value)}</strong>
-                        <small>GW9 PTS</small>
+                        <small>${escapeHTML(getCurrentGwLabel())} PTS</small>
                     </span>
                 </div>
             </div>
@@ -894,7 +1019,7 @@ function renderMatchCard(match, number = 0, type = "other") {
     }
 
     return `
-        <article class="match-card match-card--${type}" data-match-id="${escapeHTML(match.id)}" data-winner-id="${escapeHTML(winnerId || "")}">
+        <article class="match-card match-card--${type}" data-match-id="${escapeHTML(match.id)}" data-match-status="${statusClass}" data-winner-id="${escapeHTML(winnerId || "")}">
             <div class="match-card-head">
                 <span class="match-number">${matchNumber}</span>
                 <span class="match-badge ${statusClass}">${escapeHTML(status)}</span>
@@ -909,32 +1034,62 @@ function renderMatchCard(match, number = 0, type = "other") {
 }
 
 // ---------------------------------------------------------
-// 7. GW9 MATCHUPS — LOCAL FIXTURES
-// GW9 results do not exist yet, so pairings are rendered from the
-// curated fixture list above instead of the completed GW8 match rows.
+// 7. CURRENT GAMEWEEK MATCHUPS — DATABASE DRIVEN
+// Fixtures and the bye are read from the gameweek selected from
+// the `gameweeks` table; nothing here is hardcoded per gameweek.
 // ---------------------------------------------------------
 
-async function loadGW8Matches() {
-    return renderMatchups();
+function renderByeCard(bye) {
+    if (!bye) {
+        return `<div class="group-message">No bye is registered for this gameweek.</div>`;
+    }
+
+    const player = bye.player;
+
+    if (!player) {
+        return `
+            <article class="match-bye-card" data-bye-player-id="${escapeHTML(bye.player_id)}">
+                <div class="match-bye-head">
+                    <span class="c2-label">BYE // NO MATCH</span>
+                    <span class="match-badge bye">BYE</span>
+                </div>
+                <p class="match-bye-note">Bye record exists but the player record could not be resolved.</p>
+            </article>
+        `;
+    }
+
+    const hearts = getDisplayHearts(player);
+    const displayState = getDisplayState(player);
+    const stateClass = getStateClass(player);
+
+    return `
+        <article class="match-bye-card" data-bye-player-id="${escapeHTML(player.id)}">
+            <div class="match-bye-head">
+                <span class="c2-label">BYE // NO MATCH</span>
+                <span class="match-badge bye">BYE</span>
+            </div>
+            <div class="match-bye-body">
+                <span class="match-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
+                <div class="match-bye-id">
+                    <h3 class="match-bye-name">${escapeHTML(player.name)}</h3>
+                    <div class="match-bye-tags">
+                        <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
+                        ${isInfectedPlayer(player) ? '<span class="match-infected" role="img" aria-label="Infected">🦠 INFECTED</span>' : ""}
+                    </div>
+                    <div class="match-vitals">
+                        <span class="match-hearts" role="img" aria-label="${hearts} of 3 hearts remaining">
+                            ${renderHeartMarks(hearts)}
+                        </span>
+                        <span class="heart-count">${hearts}/3</span>
+                    </div>
+                </div>
+            </div>
+            <p class="match-bye-note">No fixture this gameweek — the survivor advances without a match.</p>
+        </article>
+    `;
 }
 
-function buildGW9Matches() {
-    return GW9_MATCHUPS.map(([nameA, nameB], index) => {
-        const playerA = roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(nameA));
-        const playerB = roster.find(player => normalizePlayerName(player.name) === normalizePlayerName(nameB));
-
-        return {
-            id: `gw9-${String(index + 1).padStart(2, "0")}`,
-            player_a_id: playerA ? playerA.id : null,
-            player_b_id: playerB ? playerB.id : null,
-            points_a: null,
-            points_b: null,
-            status: "PENDING"
-        };
-    });
-}
-
-async function renderMatchups() {
+function renderMatchups() {
     const groupA = document.getElementById("groupA-list");
     const groupB = document.getElementById("groupB-list");
 
@@ -943,40 +1098,48 @@ async function renderMatchups() {
         return;
     }
 
-    currentMatches = buildGW9Matches();
-    matchesLoadedFromDatabase = false;
+    const gwLabel = getCurrentGwLabel();
+    const hasGameweek = Boolean(currentGameweek);
+    const matches = Array.isArray(currentMatches) ? currentMatches : [];
+    const bye = currentGameweekBye;
 
-    const matchNumbers = new Map(
-        currentMatches.map((match, index) => [String(match.id), index + 1])
-    );
+    const kicker = document.getElementById("matchupsKicker");
+    const title = document.getElementById("matchupsTitle");
+    const summary = document.getElementById("matchupSummary");
+    const legend = document.getElementById("matchupsLegendNote");
 
-    const safeVsDanger = [];
-    const normalVsNormal = [];
-    const otherMatches = [];
+    if (kicker) {
+        kicker.textContent = hasGameweek
+            ? `Pairings // ${gwLabel}`
+            : "Pairings // Current Gameweek";
+    }
 
-    currentMatches.forEach(match => {
-        const a = getPlayerById(match.player_a_id);
-        const b = getPlayerById(match.player_b_id);
+    if (title) {
+        title.textContent = hasGameweek
+            ? `${gwLabel} — MATCHUPS`
+            : "CURRENT GAMEWEEK — MATCHUPS";
+    }
 
-        if (!a || !b) {
-            otherMatches.push(match);
-            return;
-        }
-
-        const stateA = normalizeStatus(a.state);
-        const stateB = normalizeStatus(b.state);
-
-        if (
-            (stateA === "SAFE" && stateB === "DANGER") ||
-            (stateA === "DANGER" && stateB === "SAFE")
-        ) {
-            safeVsDanger.push(match);
-        } else if (stateA === "NORMAL" && stateB === "NORMAL") {
-            normalVsNormal.push(match);
+    if (summary) {
+        if (!hasGameweek || !matchesLoadedFromDatabase) {
+            summary.textContent = "Current fixtures are unavailable.";
         } else {
-            otherMatches.push(match);
+            const fixtureText = `${matches.length} ${matches.length === 1 ? "fixture" : "fixtures"}`;
+            const byeText = bye && bye.player
+                ? ` • ${bye.player.name} on bye`
+                : "";
+            summary.textContent = `${gwLabel}: ${fixtureText}${byeText}`;
         }
-    });
+    }
+
+    if (legend) {
+        const gwStatus = String(currentGameweek?.status || "").toUpperCase();
+        legend.textContent = !hasGameweek
+            ? "Fixtures — unavailable"
+            : gwStatus === "COMPLETED"
+                ? `${gwLabel} results verified`
+                : `${gwLabel} fixtures — awaiting results`;
+    }
 
     const headingA = groupA?.parentElement?.querySelector(".grp-header");
     const headingB = groupB?.parentElement?.querySelector(".grp-header");
@@ -986,79 +1149,59 @@ async function renderMatchups() {
         headingA.classList.add("grp-a");
         headingA.innerHTML = `
             <span class="grp-title">
-                <span class="grp-chip safe">SAFE</span>
-                <span class="grp-vs">VS</span>
-                <span class="grp-chip danger">DANGER</span>
+                <span class="grp-chip safe">${escapeHTML(gwLabel)}</span>
+                <span class="grp-vs">//</span>
+                <span class="grp-chip danger">MATCHES</span>
             </span>
-            <span class="grp-count">${safeVsDanger.length} ${safeVsDanger.length === 1 ? "MATCH" : "MATCHES"}</span>
+            <span class="grp-count" data-match-count>${matches.length} ${matches.length === 1 ? "MATCH" : "MATCHES"}</span>
         `;
         headingA.setAttribute(
             "aria-label",
-            `SAFE vs DANGER — ${safeVsDanger.length} ${safeVsDanger.length === 1 ? "match" : "matches"}`
+            `${gwLabel} matches — ${matches.length} ${matches.length === 1 ? "match" : "matches"}`
         );
     }
 
     if (headingB) {
         headingB.classList.remove("grp-a");
         headingB.classList.add("grp-b");
+        const byeCount = bye ? 1 : 0;
         headingB.innerHTML = `
             <span class="grp-title">
-                <span class="grp-chip normal">NORMAL</span>
-                <span class="grp-vs">VS</span>
-                <span class="grp-chip normal">NORMAL</span>
+                <span class="grp-chip normal">BYE</span>
+                <span class="grp-vs">//</span>
+                <span class="grp-chip normal">NO MATCH</span>
             </span>
-            <span class="grp-count">${normalVsNormal.length} ${normalVsNormal.length === 1 ? "MATCH" : "MATCHES"}</span>
+            <span class="grp-count">${byeCount} ${byeCount === 1 ? "SURVIVOR" : "SURVIVORS"}</span>
         `;
         headingB.setAttribute(
             "aria-label",
-            `NORMAL vs NORMAL — ${normalVsNormal.length} ${normalVsNormal.length === 1 ? "match" : "matches"}`
+            `Bye — ${byeCount} ${byeCount === 1 ? "survivor" : "survivors"} without a match`
         );
     }
 
+    const matchNumbers = new Map(
+        matches.map((match, index) => [String(match.id), index + 1])
+    );
+
     if (groupA) {
-        groupA.innerHTML = safeVsDanger.length
-            ? safeVsDanger.map(match =>
+        if (!hasGameweek || !matchesLoadedFromDatabase) {
+            groupA.innerHTML = `<div class="group-message">Fixture data is unavailable. Please try again later.</div>`;
+        } else if (matches.length === 0) {
+            groupA.innerHTML = `<div class="group-message">No fixtures are registered for ${escapeHTML(gwLabel)}.</div>`;
+        } else {
+            groupA.innerHTML = matches.map(match =>
                 renderMatchCard(match, matchNumbers.get(String(match.id)), "sd")
-            ).join("")
-            : `<div class="group-message">No SAFE vs DANGER pairings are listed for GW9.</div>`;
+            ).join("");
+        }
         groupA.removeAttribute("aria-busy");
     }
 
     if (groupB) {
-        groupB.innerHTML = normalVsNormal.length
-            ? normalVsNormal.map(match =>
-                renderMatchCard(match, matchNumbers.get(String(match.id)), "nn")
-            ).join("")
-            : `<div class="group-message">No NORMAL vs NORMAL pairings are listed for GW9.</div>`;
-
-        if (otherMatches.length) {
-            const extra = document.createElement("div");
-            extra.className = "match-extra";
-            extra.innerHTML = `
-                <h3>OTHER MATCHES (${otherMatches.length})</h3>
-                <div class="match-extra-grid">
-                    ${otherMatches.map(match =>
-                        renderMatchCard(match, matchNumbers.get(String(match.id)), "other")
-                    ).join("")}
-                </div>
-            `;
-            groupB.appendChild(extra);
-        }
-
+        groupB.innerHTML = hasGameweek && matchesLoadedFromDatabase
+            ? renderByeCard(bye)
+            : `<div class="group-message">Bye data is unavailable. Please try again later.</div>`;
         groupB.removeAttribute("aria-busy");
     }
-
-    const summary = document.getElementById("matchupSummary");
-    if (summary) {
-        summary.textContent = `Quarantine Zone Battles — ${safeVsDanger.length} SAFE vs DANGER • ${normalVsNormal.length} NORMAL vs NORMAL • ${currentMatches.length} Matches`;
-    }
-
-    console.log("GW9 classification:", {
-        total: currentMatches.length,
-        safeVsDanger: safeVsDanger.length,
-        normalVsNormal: normalVsNormal.length,
-        other: otherMatches.length
-    });
 
     if (LIVE_ENABLED && liveState.data) {
         applyLiveScores();
@@ -1093,11 +1236,28 @@ function ensureLiveMeta() {
     const stamp = liveState.updatedAt
         ? liveState.updatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : "—";
-    const label = liveState.stale ? "LIVE · PROVISIONAL — STALE" : "LIVE · PROVISIONAL";
-    const stampText = liveState.stale ? `Last update ${stamp}` : `Updated ${stamp}`;
+    const unavailable = Boolean(liveState.error) && !liveState.data;
+    const label = unavailable
+        ? "LIVE SCORE UNAVAILABLE"
+        : liveState.stale
+            ? "LIVE · PROVISIONAL — STALE"
+            : "LIVE · PROVISIONAL";
+    const stampText = unavailable
+        ? "Provisional live points could not be loaded."
+        : liveState.stale
+            ? `Last update ${stamp}`
+            : `Updated ${stamp}`;
 
-    meta.classList.toggle("is-stale", Boolean(liveState.stale));
-    meta.innerHTML = `
+    meta.classList.toggle("is-stale", Boolean(liveState.stale) && !unavailable);
+    meta.classList.toggle("is-error", unavailable);
+    meta.innerHTML = unavailable
+        ? `
+        <span class="live-dot" aria-hidden="true"></span>
+        <span class="live-label">${label}</span>
+        <span class="live-stamp">${stampText}</span>
+        <span class="live-note">Fixtures and stored results remain unaffected. Live points refresh automatically.</span>
+    `
+        : `
         <span class="live-dot" aria-hidden="true"></span>
         <span class="live-label">${label}</span>
         <span class="live-stamp">${stampText}</span>
@@ -1109,11 +1269,20 @@ function ensureLiveMeta() {
 
 function applyLiveScores() {
     if (!LIVE_ENABLED || !liveState.data || !liveState.data.players) return;
+    if (!currentGameweek) return;
+    if (
+        liveState.data.gw !== undefined &&
+        Number(liveState.data.gw) !== Number(currentGameweek.gw_number)
+    ) {
+        return;
+    }
 
     const playersLive = liveState.data.players;
-    const cards = document.querySelectorAll('#page-matchups .match-card[data-match-id^="gw9-"]');
+    const cards = document.querySelectorAll("#page-matchups .match-card[data-match-id]");
 
     cards.forEach(card => {
+        if (String(card.dataset.matchStatus || "").toLowerCase() === "completed") return;
+
         let cardHasLive = false;
 
         card.querySelectorAll(".match-player[data-player-id]").forEach(playerEl => {
@@ -1163,12 +1332,19 @@ function applyLiveScores() {
 async function loadLiveScores() {
     if (!LIVE_ENABLED || liveState.inFlight) return;
 
+    if (!currentGameweek) {
+        liveState.error = new Error("No current gameweek");
+        ensureLiveMeta();
+        return;
+    }
+
+    const gw = Number(currentGameweek.gw_number);
     liveState.inFlight = true;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 12000);
 
     try {
-        const response = await fetch("/api/live?gw=9", {
+        const response = await fetch(`/api/live?gw=${encodeURIComponent(gw)}`, {
             headers: { Accept: "application/json" },
             signal: controller.signal
         });
@@ -1178,6 +1354,9 @@ async function loadLiveScores() {
         const payload = await response.json();
         if (!payload || payload.ok !== true || !payload.players) {
             throw new Error("Invalid live payload");
+        }
+        if (payload.gw !== undefined && Number(payload.gw) !== gw) {
+            throw new Error("Gameweek mismatch");
         }
 
         liveState.data = payload;
@@ -1190,6 +1369,8 @@ async function loadLiveScores() {
         if (liveState.data) {
             liveState.stale = true;
             applyLiveScores();
+        } else {
+            ensureLiveMeta();
         }
     } finally {
         clearTimeout(timer);
@@ -1901,15 +2082,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     initPlayerSearch();
 
     await loadPlayersFromSupabase();
-    await loadGW8PointsFromSupabase();
-    syncGW8PointsNote();
 
-    renderStandings();
-    renderSurvivorCards();
+    const gameweeks = await loadGameweeksFromSupabase();
+    currentGameweek = pickCurrentGameweek(gameweeks || []);
+    latestCompletedGameweek = pickLatestCompletedGameweek(gameweeks || []);
+
+    publishDebugState();
+
+    if (latestCompletedGameweek) {
+        await loadGameweekPoints(latestCompletedGameweek);
+    }
+
+    if (currentGameweek) {
+        await loadCurrentGameweekMatches();
+    }
+
+    syncPageLabels();
+    syncPointsNote();
+    filterStandings();
     renderInfected();
     syncJourneyLedger();
-
-    await loadGW8Matches();
+    renderMatchups();
 
     initTeamLineupViewer();
     startLiveScores();
@@ -1919,14 +2112,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     publishDebugState();
 
-    console.log("THE LAST OF FPL: initialization finished.");
+    console.log("THE LAST OF FPL: initialization finished.", {
+        gameweek: currentGameweek ? currentGameweek.gw_number : null,
+        pointsGameweek: gwPointsGameweek ? gwPointsGameweek.gw_number : null,
+        players: roster.length,
+        matches: currentMatches.length,
+        bye: currentGameweekBye ? currentGameweekBye.player_id : null
+    });
 });
 
 // Public functions for existing HTML onclick handlers.
 window.switchTab = switchTab;
 window.filterStandings = filterStandings;
 window.renderMatchups = renderMatchups;
-window.loadGW8Matches = loadGW8Matches;
+window.loadCurrentMatches = loadCurrentGameweekMatches;
 window.syncJourneyLedger = syncJourneyLedger;
 window.currentMatches = currentMatches;
 window.roster = roster;
