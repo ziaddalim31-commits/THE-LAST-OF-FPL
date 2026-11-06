@@ -523,7 +523,7 @@ function renderInfected() {
     if (sectorCount) sectorCount.textContent = caseCount;
 
     const registryCount = document.getElementById("infectedRegistry");
-    if (registryCount) registryCount.textContent = `Manual \u00b7 ${caseCount} Names`;
+    if (registryCount) registryCount.textContent = `Supabase \u00b7 ${caseCount} Names`;
 
     const caseRange = document.getElementById("infectedCaseRange");
     if (caseRange) caseRange.textContent = `BIOHAZARD // CASE FILES 01\u2013${caseCount}`;
