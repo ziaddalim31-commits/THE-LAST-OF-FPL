@@ -29,6 +29,28 @@ async function supabaseRequest(path, options = {}) {
   return result;
 }
 
+function normalizeStatus(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function pickCurrentGameweek(gameweeks) {
+  const list = Array.isArray(gameweeks) ? gameweeks : [];
+
+  const pending = list
+    .filter((gameweek) => normalizeStatus(gameweek.status) === "PENDING")
+    .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
+
+  if (pending.length > 0) {
+    return pending[0];
+  }
+
+  const completed = list
+    .filter((gameweek) => normalizeStatus(gameweek.status) === "COMPLETED")
+    .sort((a, b) => Number(b.gw_number) - Number(a.gw_number));
+
+  return completed[0] || null;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -92,23 +114,30 @@ module.exports = async function handler(req, res) {
       "players?select=id,name,status,hearts,is_infected,is_active&order=id.asc"
     );
 
-    // 4. Find GW10.
-    const gameweeks = await supabaseRequest(
-      "gameweeks?select=id,gw_number,chapter,status&gw_number=eq.10&limit=1"
-    );
+    // 4. Select the current gameweek: lowest PENDING, else latest COMPLETED.
+    let gameweeks;
 
-    if (!gameweeks || gameweeks.length === 0) {
-      return send(res, 404, { error: "GW10_NOT_FOUND" });
+    try {
+      gameweeks = await supabaseRequest(
+        "gameweeks?select=id,gw_number,chapter,status&order=gw_number.asc"
+      );
+    } catch (error) {
+      console.error("Could not load gameweeks:", error);
+      return send(res, 503, { error: "GAMEWEEK_UNAVAILABLE" });
     }
 
-    const gameweek = gameweeks[0];
+    const gameweek = pickCurrentGameweek(gameweeks);
 
-    // 5. Load GW10 matches.
+    if (!gameweek) {
+      return send(res, 404, { error: "GAMEWEEK_NOT_FOUND" });
+    }
+
+    // 5. Load matches for the selected gameweek.
     const matches = await supabaseRequest(
       `matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,status&gameweek_id=eq.${gameweek.id}&order=id.asc`
     );
 
-    // 6. Load the GW10 BYE record.
+    // 6. Load the BYE record for the selected gameweek.
     const byes = await supabaseRequest(
       `gameweek_byes?select=id,gameweek_id,player_id&gameweek_id=eq.${gameweek.id}`
     );

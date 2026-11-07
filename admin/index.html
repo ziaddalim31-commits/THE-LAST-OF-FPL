@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#080d0a">
+  <title>ADMIN CONTROL CENTER — THE LAST OF FPL</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  
+  <main class="admin-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">TLF</span>
+        <div>
+          <h1>THE LAST OF FPL</h1>
+          <p>EMPERORES KINGDOM FANTASY</p>
+        </div>
+      </div>
+      <span class="clearance">CLEARANCE: OMEGA</span>
+    </header>
+
+    <section class="login-panel" id="login-panel">
+      <div class="eyebrow">FIELD OPERATIONS / RESTRICTED ACCESS</div>
+      <h2>ADMIN CONTROL CENTER</h2>
+      <p class="intro">Authorized personnel only. Identify yourself to continue.</p>
+
+      <form id="login-form">
+        <label for="email">ADMIN EMAIL</label>
+        <input id="email" type="email" autocomplete="username"
+               placeholder="Enter admin email" required>
+
+        <label for="password">PASSWORD</label>
+        <input id="password" type="password" autocomplete="current-password"
+               placeholder="Enter password" required>
+
+        <button id="login-button" type="submit">AUTHENTICATE</button>
+      </form>
+
+      <p id="message" role="status" aria-live="polite"></p>
+      <div class="security-note">
+        <span class="status-dot"></span>
+        SECURE CONNECTION — SUPABASE AUTH
+      </div>
+    </section>
+
+    <section class="dashboard" id="dashboard" hidden>
+      <div class="dashboard-heading">
+        <div>
+          <div class="eyebrow">AUTHENTICATION SUCCESSFUL</div>
+          <h2>WELCOME, ADMIN</h2>
+          <p id="admin-email"></p>
+        </div>
+        <button id="logout-button" class="logout-button">LOG OUT</button>
+      </div>
+
+      <div class="notice">
+  <strong>ADMIN ACCESS VERIFIED</strong>
+  <p>Secure connection established. Tournament database is ready.</p>
+</div>
+
+<section id="admin-data" class="admin-data" aria-live="polite">
+  <p>LOADING TOURNAMENT DATA...</p>
+</section>
+
+      <div class="module-grid">
+        <article class="module">
+          <span>01 / MATCH OPERATIONS</span>
+          <h3>Match Management</h3>
+          <p>Upcoming match creation and score entry.</p>
+          <small>COMING NEXT</small>
+        </article>
+        <article class="module">
+          <span>02 / RESULT CONTROL</span>
+          <h3>Results Preview</h3>
+          <p>Review winners, hearts, statuses and infection changes.</p>
+          <small>COMING NEXT</small>
+        </article>
+        <article class="module">
+          <span>03 / DATABASE</span>
+          <h3>Round History</h3>
+          <p>Review previously confirmed gameweeks.</p>
+          <small>COMING NEXT</small>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      THE LAST OF FPL <span>•</span> ADMIN ACCESS ONLY
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>
