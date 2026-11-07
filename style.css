@@ -2987,10 +2987,11 @@ footer p::before {
 
 @media (max-width: 900px) {
     .glass-table-wrapper {
-        display: none;
+        display: block;
     }
 
     .survivor-dossier {
+        display: none;
         margin-top: 0;
     }
 }
