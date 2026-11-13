@@ -85,10 +85,11 @@ function applyPlayerResult(player, won, opponentWasInfected) {
     }
 
     const active = hearts > 0 && before.is_active;
-    if (!active) infected = false;
+    // Infection is permanent throughout Chapter II, even when the player is eliminated.
 
     return {
         player_id: player.id,
+        player_name: player.name,
         status,
         hearts,
         is_infected: infected,
@@ -207,7 +208,7 @@ function buildGameweekPreview(input) {
             infection_transfers: [...updates.values()].filter(player => player.is_infected && !player.before.is_infected).length
         },
         results,
-        player_updates: [...updates.values()].map(({ before, ...player }) => player),
+        player_updates: [...updates.values()],
         byes: byes.map(bye => ({
             player_id: bye.player_id,
             name: activeById.get(String(bye.player_id))?.name || null
