@@ -96,7 +96,7 @@ module.exports = async function handler(req, res) {
 
         const preview = buildGameweekPreview({ gameweek, players, matches, byes, live });
         const currentToken = createHash("sha256")
-            .update(JSON.stringify({ gameweek_id: gameweek.id, preview }))
+            .update(JSON.stringify({ gameweek_id: gameweek.id, results: preview.results, player_updates: preview.player_updates }))
             .digest("hex");
 
         if (!sameToken(body.preview_token, currentToken)) {
