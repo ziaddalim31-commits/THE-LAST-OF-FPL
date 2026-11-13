@@ -158,7 +158,7 @@ function renderGameweekPreview(preview) {
     const loserPoints = winnerIsA ? result.points_b : result.points_a;
     const tieValues = result.tiebreak && result.tiebreak.values;
     const decision = tieValues
-      ? `${result.winner_method} (Winner: ${tieValues[String(result.winner_id)]} · Opponent: ${tieValues[String(result.winnerIsA ? result.player_b_id : result.player_a_id)]})`
+      ? `${result.winner_method} (Winner: ${tieValues[String(result.winner_id)]} · Opponent: ${tieValues[String(winnerIsA ? result.player_b_id : result.player_a_id)]})`
       : result.winner_method;
     return `
       <tr>
