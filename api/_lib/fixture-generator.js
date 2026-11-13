@@ -65,6 +65,14 @@ function generateFixtures(input) {
 
     const statusCounts = { SAFE: 0, NORMAL: 0, DANGER: 0 };
     for (const player of roster) statusCounts[player.status] += 1;
+    const infectedPlayers = roster
+        .filter(player => player.is_infected === true)
+        .map(player => ({
+            id: player.id,
+            name: player.name,
+            status: player.status,
+            hearts: Number(player.hearts)
+        }));
 
     let bye = null;
     if (roster.length % 2 === 1) {
@@ -167,10 +175,12 @@ function generateFixtures(input) {
             player_a_name: a.name,
             player_a_status: a.status,
             player_a_hearts: Number(a.hearts),
+            player_a_is_infected: a.is_infected === true,
             player_b_id: b.id,
             player_b_name: b.name,
             player_b_status: b.status,
             player_b_hearts: Number(b.hearts),
+            player_b_is_infected: b.is_infected === true,
             priority: tierLabel,
             priority_rank: tier + 1
         });
@@ -186,9 +196,12 @@ function generateFixtures(input) {
             player_id: bye.id,
             name: bye.name,
             status: bye.status,
-            hearts: Number(bye.hearts)
+            hearts: Number(bye.hearts),
+            is_infected: bye.is_infected === true
         } : null,
         status_counts: statusCounts,
+        infected_count: infectedPlayers.length,
+        infected_players: infectedPlayers,
         priority_counts: tierCounts,
         rematches: 0,
         matches
