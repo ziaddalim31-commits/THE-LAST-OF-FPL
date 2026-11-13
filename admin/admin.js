@@ -208,7 +208,13 @@ if (previewButton) {
       });
       const result = await response.json();
       if (!response.ok || !result.success) {
-        throw new Error(result.detail || result.error || "PREVIEW_FAILED");
+        const detail = result.detail;
+        const readableDetail = typeof detail === "string"
+          ? detail
+          : detail && typeof detail === "object"
+            ? JSON.stringify(detail)
+            : "";
+        throw new Error(readableDetail || result.error || "PREVIEW_FAILED");
       }
       renderGameweekPreview(result.preview);
       showMessage("PREVIEW GENERATED — DATABASE UNCHANGED.", true);
