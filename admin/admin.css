@@ -230,3 +230,17 @@ footer span { color: var(--accent); }
 #gameweek-preview td { color: var(--text); }
 #gameweek-preview tr:last-child td { border-bottom: 0; }
 #preview-gameweek-button { max-width: 360px; }
+
+
+#gw11-fixture-preview { margin-top: 22px; }
+#gw11-fixture-preview h3 { color: var(--accent); font-size: 28px; margin-bottom: 8px; }
+#gw11-fixture-preview h4 { margin: 24px 0 10px; font: 700 18px "Barlow Condensed"; }
+#gw11-fixture-preview p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+#gw11-fixture-preview p strong { color: var(--accent); }
+#gw11-fixture-preview table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 12px; }
+#gw11-fixture-preview th, #gw11-fixture-preview td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+#gw11-fixture-preview th { color: var(--accent); background: #17231a; font: 700 13px "Barlow Condensed"; letter-spacing: .7px; }
+#gw11-fixture-preview td { color: var(--text); }
+#gw11-fixture-preview td small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+#gw11-fixture-preview tr:last-child td { border-bottom: 0; }
+#generate-gw11-button { max-width: 360px; }
