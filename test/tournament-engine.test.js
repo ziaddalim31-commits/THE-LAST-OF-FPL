@@ -42,6 +42,43 @@ test("infected winner transmits infection without taking a heart from a SAFE los
     assert.equal(loser.before.hearts, 3);
 });
 
+test("GW10 infected wins transfer infection to both opponents, including a vice-captain tiebreak", () => {
+    const input = makeInput();
+    input.players = [
+        { id: 11, name: "Ismail Hadrani", status: "NORMAL", hearts: 3, is_infected: true, is_active: true },
+        { id: 12, name: "Moulchi", status: "SAFE", hearts: 2, is_infected: false, is_active: true },
+        { id: 13, name: "Abdelghafour", status: "NORMAL", hearts: 1, is_infected: true, is_active: true },
+        { id: 14, name: "Abdennour", status: "SAFE", hearts: 3, is_infected: false, is_active: true }
+    ];
+    input.matches = [
+        { id: 201, player_a_id: 11, player_b_id: 12, status: "PENDING" },
+        { id: 202, player_a_id: 13, player_b_id: 14, status: "PENDING" }
+    ];
+    input.live.players = {
+        "11": { points: 74, vice_captain_points: 10, bench_points: [1, 1, 1, 1] },
+        "12": { points: 74, vice_captain_points: 5, bench_points: [2, 2, 2, 2] },
+        "13": { points: 66, vice_captain_points: 6, bench_points: [1, 1, 1, 1] },
+        "14": { points: 58, vice_captain_points: 5, bench_points: [2, 2, 2, 2] }
+    };
+
+    const preview = buildGameweekPreview(input);
+    const infectedNames = preview.player_updates
+        .filter(player => player.is_infected)
+        .map(player => player.player_name)
+        .sort();
+
+    assert.deepEqual(infectedNames, [
+        "Abdelghafour",
+        "Abdennour",
+        "Ismail Hadrani",
+        "Moulchi"
+    ]);
+    assert.equal(preview.results[0].winner_method, "VICE_CAPTAIN_POINTS");
+    assert.equal(preview.summary.infection_transfers, 2);
+    assert.equal(preview.player_updates.find(player => player.player_id === 12).hearts, 2);
+    assert.equal(preview.player_updates.find(player => player.player_id === 14).hearts, 3);
+});
+
 test("a DANGER player who loses loses exactly one heart", () => {
     const input = makeInput();
     input.players[0] = { ...input.players[0], is_infected: false, status: "DANGER", hearts: 2 };
