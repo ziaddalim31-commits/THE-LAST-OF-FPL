@@ -66,26 +66,34 @@
   <p>LOADING TOURNAMENT DATA...</p>
 </section>
 
-      <div class="module-grid">
-        <article class="module">
-          <span>01 / MATCH OPERATIONS</span>
-          <h3>Match Management</h3>
-          <p>Upcoming match creation and score entry.</p>
-          <small>COMING NEXT</small>
-        </article>
-        <article class="module">
-          <span>02 / RESULT CONTROL</span>
-          <h3>Results Preview</h3>
-          <p>Review winners, hearts, statuses and infection changes.</p>
-          <small>COMING NEXT</small>
-        </article>
-        <article class="module">
-          <span>03 / DATABASE</span>
-          <h3>Round History</h3>
-          <p>Review previously confirmed gameweeks.</p>
-          <small>COMING NEXT</small>
-        </article>
-      </div>
+      <section class="admin-data" aria-labelledby="automation-title">
+        <h2 id="automation-title">GAMEWEEK AUTOMATION</h2>
+        <p>Fetch final FPL scores, calculate every fixture and preview survivor changes. Nothing is saved by this action.</p>
+        <button id="preview-gameweek-button" type="button">GENERATE RESULTS PREVIEW</button>
+        <div id="gameweek-preview" aria-live="polite"></div>
+      </section>
+
+
+      <section class="admin-data" aria-labelledby="fixtures-title">
+        <h2 id="fixtures-title">GW11 FIXTURE GENERATOR</h2>
+        <p>Build a status-priority schedule, check every previous opponent and save only after the prior gameweek is confirmed.</p>
+        <button id="generate-gw11-button" type="button">GENERATE GW11 FIXTURE PREVIEW</button>
+        <div id="gw11-fixture-preview" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-data workflow-section" aria-labelledby="match-management-title">
+        <h2 id="match-management-title">MATCH MANAGEMENT</h2>
+        <p>Review approved fixtures and match status. Official FPL scores are loaded during Results Preview; manual score edits are disabled to protect the tournament scoring rules.</p>
+        <button id="refresh-matches-button" type="button">REFRESH MATCHES</button>
+        <div id="match-management-content" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-data workflow-section" aria-labelledby="history-title">
+        <h2 id="history-title">ROUND HISTORY</h2>
+        <p>Browse completed gameweeks, match winners and each survivor's before/after status, hearts and infection.</p>
+        <button id="load-history-button" type="button">LOAD ROUND HISTORY</button>
+        <div id="round-history-content" aria-live="polite"></div>
+      </section>
     </section>
 
     <footer>
