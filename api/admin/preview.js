@@ -1,6 +1,8 @@
 "use strict";
 
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
+const liveHandler = require("../live");
+const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -69,17 +71,16 @@ module.exports = async function handler(req, res) {
             db(`gameweek_byes?select=id,gameweek_id,player_id&gameweek_id=eq.${encodeURIComponent(gameweek.id)}`)
         ]);
 
-        const host = req.headers["x-forwarded-host"] || req.headers.host;
-        const protocol = req.headers["x-forwarded-proto"] || "https";
-        if (!host) return send(res, 500, { error: "REQUEST_HOST_UNAVAILABLE" });
-        const liveUrl = `${protocol}://${host}/api/live?gw=${encodeURIComponent(gameweek.gw_number)}`;
-        const liveResponse = await fetch(liveUrl, {
-            headers: { Accept: "application/json" },
-            signal: AbortSignal.timeout(15000)
-        });
-        const live = await liveResponse.json().catch(() => null);
-        if (!liveResponse.ok || !live || live.ok !== true) {
-            return send(res, 503, { error: "FPL_DATA_UNAVAILABLE", detail: live && live.error || "LIVE_API_FAILED" });
+        // Call the same read-only FPL handler directly in this process.
+        // Do not make an HTTP request back to this deployment: Vercel Protection
+        // can return 401 "Protected deployment" for server-to-server self-calls.
+        const liveResult = await invokeLiveHandler(liveHandler, gameweek.gw_number);
+        const live = liveResult.payload;
+        if (liveResult.statusCode < 200 || liveResult.statusCode >= 300 || live.ok !== true) {
+            return send(res, 503, {
+                error: "FPL_DATA_UNAVAILABLE",
+                detail: live.detail || live.error || `LIVE_API_HTTP_${liveResult.statusCode}`
+            });
         }
 
         const preview = buildGameweekPreview({ gameweek, players, matches, byes, live });
