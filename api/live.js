@@ -177,13 +177,13 @@ function scoreEntry(picksPayload, elements) {
 
         const element = elements.get(Number(pick.element)) || null;
 
+        if (pick.is_vice_captain) {
+            viceCaptainPoints = element ? element.points : null;
+        }
+
         if (position > 11) {
             benchPoints.push(element ? element.points : null);
             continue;
-        }
-
-        if (pick.is_vice_captain) {
-            viceCaptainPoints = element ? element.points : null;
         }
 
         // Tournament scoring: starting XI only; captain multiplier is capped at x2.
