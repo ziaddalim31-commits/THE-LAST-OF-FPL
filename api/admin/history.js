@@ -119,4 +119,5 @@ module.exports = async function handler(req, res) {
         }
         console.error("Round history failed:", error);
         return send(res, 500, { error: "HISTORY_LOAD_FAILED" });
+    }
 };
