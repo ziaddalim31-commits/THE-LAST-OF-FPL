@@ -26,4 +26,7 @@ jobs:
           node --check api/_lib/tournament-engine.js
           node --check api/_lib/fixture-generator.js
           node --check api/admin/fixtures-preview.js
+          node --check api/admin/fixtures-save.js
+          node --check api/admin/confirm-results.js
+          node --check api/admin/history.js
           node --check api/_lib/invoke-live-handler.js
