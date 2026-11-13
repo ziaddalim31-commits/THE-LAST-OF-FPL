@@ -259,9 +259,9 @@ function renderGw11FixturePreview(result) {
   const fixtureRows = preview.matches.map((match, index) => `
     <tr>
       <td>${index + 1}</td>
-      <td><strong>${escapeHTML(match.player_a_name)}</strong><small>${escapeHTML(match.player_a_status)} · ${match.player_a_hearts}/3 hearts</small></td>
+      <td><strong>${escapeHTML(match.player_a_name)}</strong><small>${escapeHTML(match.player_a_status)} · ${match.player_a_hearts}/3 hearts${match.player_a_is_infected ? " · 🦠 INFECTED" : ""}</small></td>
       <td>VS</td>
-      <td><strong>${escapeHTML(match.player_b_name)}</strong><small>${escapeHTML(match.player_b_status)} · ${match.player_b_hearts}/3 hearts</small></td>
+      <td><strong>${escapeHTML(match.player_b_name)}</strong><small>${escapeHTML(match.player_b_status)} · ${match.player_b_hearts}/3 hearts${match.player_b_is_infected ? " · 🦠 INFECTED" : ""}</small></td>
       <td>${escapeHTML(match.priority)}</td>
     </tr>
   `).join("");
@@ -274,7 +274,8 @@ function renderGw11FixturePreview(result) {
     <h3>GW11 — FIXTURE PREVIEW</h3>
     <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through}</p>
     <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
-    <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER}</p>
+    <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER} · INFECTED: ${preview.infected_count}</p>
+    ${preview.infected_count ? `<p><strong>INFECTED SURVIVORS:</strong> ${preview.infected_players.map(player => escapeHTML(player.name)).join(", ")}</p>` : ""}
     ${bye}
     <h4>Pairing priority breakdown</h4>
     <div class="table-scroll"><table><thead><tr><th>Priority</th><th>Matches</th></tr></thead><tbody>${priorityRows || "<tr><td colspan='2'>No matches</td></tr>"}</tbody></table></div>
