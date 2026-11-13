@@ -53,6 +53,7 @@ async function loadAdminData(accessToken) {
       <p>MATCHES: ${result.matches.length}</p>
       <p>BYES: ${result.byes.length}</p>
     `;
+    renderMatchManagement(result);
   } catch (error) {
     console.error("Admin data error:", error);
     adminData.innerHTML =
@@ -151,7 +152,10 @@ verifyAdmin().catch((error) => {
 const previewButton = document.getElementById("preview-gameweek-button");
 const previewPanel = document.getElementById("gameweek-preview");
 
-function renderGameweekPreview(preview) {
+let lastPreviewToken = null;
+
+function renderGameweekPreview(preview, previewToken) {
+  lastPreviewToken = previewToken || null;
   const rows = preview.results.map((result) => {
     const winnerIsA = String(result.winner_id) === String(result.player_a_id);
     const winnerPoints = winnerIsA ? result.points_a : result.points_b;
@@ -201,6 +205,7 @@ function renderGameweekPreview(preview) {
     <h4>Survivor changes</h4>
     <div class="table-scroll"><table><thead><tr><th>Player</th><th>Status (before → after)</th><th>Hearts (before → after)</th><th>Infection (before → after)</th><th>State (before → after)</th></tr></thead><tbody>${updates}</tbody></table></div>
     <p><strong>PREVIEW ONLY — no tournament data has been changed.</strong></p>
+    <button id="confirm-results-button" type="button" ${lastPreviewToken ? "" : "disabled"}>CONFIRM AND SAVE RESULTS</button>
   `;
 }
 
@@ -232,7 +237,8 @@ if (previewButton) {
             : "";
         throw new Error(readableDetail || result.error || "PREVIEW_FAILED");
       }
-      renderGameweekPreview(result.preview);
+      renderGameweekPreview(result.preview, result.preview_token);
+      setupConfirmResultsButton();
       showMessage("PREVIEW GENERATED — DATABASE UNCHANGED.", true);
     } catch (error) {
       previewPanel.textContent = `PREVIEW BLOCKED: ${error.message}. No database changes were made.`;
@@ -249,7 +255,10 @@ if (previewButton) {
 const generateGw11Button = document.getElementById("generate-gw11-button");
 const gw11FixturePanel = document.getElementById("gw11-fixture-preview");
 
+let lastGw11FixturePreview = null;
+
 function renderGw11FixturePreview(result) {
+  lastGw11FixturePreview = result;
   const preview = result.preview;
   const priorityRows = Object.entries(preview.priority_counts)
     .filter(([, count]) => count > 0)
@@ -282,6 +291,7 @@ function renderGw11FixturePreview(result) {
     <h4>Proposed fixtures</h4>
     <div class="table-scroll"><table><thead><tr><th>#</th><th>Player A</th><th></th><th>Player B</th><th>Rule</th></tr></thead><tbody>${fixtureRows}</tbody></table></div>
     <p><strong>PREVIEW ONLY — no fixtures or tournament records were saved.</strong></p>
+    <button id="save-gw11-fixtures-button" type="button">SAVE APPROVED GW11 FIXTURES</button>
   `;
 }
 
@@ -311,6 +321,7 @@ if (generateGw11Button) {
         throw new Error((result.detail || result.error || "FIXTURE_PREVIEW_FAILED") + details);
       }
       renderGw11FixturePreview(result);
+      setupSaveGw11FixturesButton();
       showMessage("GW11 FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.", true);
     } catch (error) {
       gw11FixturePanel.textContent = `GENERATION BLOCKED: ${error.message}. No database changes were made.`;
@@ -321,3 +332,239 @@ if (generateGw11Button) {
     }
   });
 }
+
+
+// Match Management: persisted fixtures are read-only here; FPL is the score source.
+function renderMatchManagement(data) {
+  const panel = document.getElementById("match-management-content");
+  if (!panel) return;
+
+  if (!data.matches || data.matches.length === 0) {
+    panel.innerHTML = "<p>No fixtures are saved for the current gameweek yet. Generate and review the GW11 preview above.</p>";
+    return;
+  }
+
+  const rows = data.matches.map((match, index) => {
+    const a = match.player_a || {};
+    const b = match.player_b || {};
+    const status = String(match.status || "PENDING").toUpperCase();
+    const score = match.points_a === null || match.points_a === undefined
+      ? "—"
+      : `${match.points_a} – ${match.points_b}`;
+    const winner = match.winner
+      ? escapeHTML(match.winner.name)
+      : (match.winner_id ? escapeHTML(match.winner_id) : "Pending");
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHTML(a.name || match.player_a_id)}</td>
+        <td>${score}</td>
+        <td>${escapeHTML(b.name || match.player_b_id)}</td>
+        <td>${winner}</td>
+        <td>${escapeHTML(status)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const byes = (data.byes || []).map(bye =>
+    escapeHTML(bye.player && bye.player.name || bye.player_id)
+  ).join(", ") || "None";
+
+  panel.innerHTML = `
+    <p><strong>GW${escapeHTML(data.gameweek.gw_number)} · ${data.matches.length} FIXTURES · BYE: ${byes}</strong></p>
+    <div class="table-scroll"><table><thead><tr><th>#</th><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="workflow-note">Scores are populated from the official FPL feed during Results Preview. This screen does not permit manual score changes.</p>
+  `;
+}
+
+async function setupConfirmResultsButton() {
+  const button = document.getElementById("confirm-results-button");
+  if (!button) return;
+
+  button.addEventListener("click", async () => {
+    if (!lastPreviewToken) {
+      showMessage("GENERATE A FRESH RESULTS PREVIEW FIRST.");
+      return;
+    }
+    if (!window.confirm("Confirm this exact results preview and save all match results, player changes and history? This action cannot be repeated.")) {
+      return;
+    }
+
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (!accessToken) {
+      showMessage("SESSION EXPIRED — Please authenticate again.");
+      showLogin();
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "CONFIRMING RESULTS...";
+    try {
+      const response = await fetch("/api/admin/confirm-results", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ preview_token: lastPreviewToken })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.detail || result.error || "CONFIRMATION_FAILED");
+      }
+
+      lastPreviewToken = null;
+      previewPanel.innerHTML = `
+        <h3>GW${escapeHTML(result.gameweek.gw_number)} — RESULTS CONFIRMED</h3>
+        <p>${escapeHTML(result.confirmation.matches_completed)} matches completed · ${escapeHTML(result.confirmation.players_updated)} survivors updated · ${escapeHTML(result.confirmation.history_rows_created)} history records created.</p>
+      `;
+      showMessage("RESULTS CONFIRMED AND SAVED.", true);
+      await loadAdminData(accessToken);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = "CONFIRM AND SAVE RESULTS";
+      showMessage(`RESULTS NOT CONFIRMED: ${error.message}`);
+    }
+  });
+}
+
+async function setupSaveGw11FixturesButton() {
+  const button = document.getElementById("save-gw11-fixtures-button");
+  if (!button || !lastGw11FixturePreview) return;
+
+  button.addEventListener("click", async () => {
+    if (!window.confirm("Save these exact GW11 fixtures and the displayed bye to Supabase?")) return;
+
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (!accessToken) {
+      showMessage("SESSION EXPIRED — Please authenticate again.");
+      showLogin();
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "SAVING APPROVED FIXTURES...";
+    const preview = lastGw11FixturePreview.preview;
+    try {
+      const response = await fetch("/api/admin/fixtures-save", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fixtures: preview.matches,
+          bye_player_id: preview.bye ? preview.bye.player_id : null
+        })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.detail || result.error || "FIXTURE_SAVE_FAILED");
+      }
+
+      lastGw11FixturePreview = null;
+      gw11FixturePanel.innerHTML = `
+        <h3>GW11 — FIXTURES SAVED</h3>
+        <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
+        <p>Bye: ${result.saved.bye_player_id ? escapeHTML(result.saved.bye_player_id) : "None"}</p>
+      `;
+      showMessage("GW11 FIXTURES SAVED.", true);
+      await loadAdminData(accessToken);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = "SAVE APPROVED GW11 FIXTURES";
+      showMessage(`FIXTURES NOT SAVED: ${error.message}`);
+    }
+  });
+}
+
+async function loadRoundHistory() {
+  const panel = document.getElementById("round-history-content");
+  const button = document.getElementById("load-history-button");
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+  if (!accessToken) {
+    showMessage("SESSION EXPIRED — Please authenticate again.");
+    showLogin();
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "LOADING HISTORY...";
+  panel.textContent = "Loading completed gameweeks...";
+  try {
+    const response = await fetch("/api/admin/history", {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || "HISTORY_LOAD_FAILED");
+    }
+    renderRoundHistory(result);
+  } catch (error) {
+    panel.textContent = `HISTORY UNAVAILABLE: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "LOAD ROUND HISTORY";
+  }
+}
+
+function renderRoundHistory(data) {
+  const panel = document.getElementById("round-history-content");
+  if (!data.gameweeks || data.gameweeks.length === 0) {
+    panel.innerHTML = "<p>No completed gameweeks with history records yet.</p>";
+    return;
+  }
+
+  panel.innerHTML = `
+    <p><strong>${data.totals.completed_gameweeks} completed gameweeks · ${data.totals.completed_matches} matches · ${data.totals.history_rows} survivor history records</strong></p>
+    ${data.gameweeks.map(gameweek => {
+      const matchRows = gameweek.matches.map(match => `
+        <tr>
+          <td>${escapeHTML(match.player_a && match.player_a.name || match.player_a_id)}</td>
+          <td>${match.points_a ?? "—"} – ${match.points_b ?? "—"}</td>
+          <td>${escapeHTML(match.player_b && match.player_b.name || match.player_b_id)}</td>
+          <td>${escapeHTML(match.winner && match.winner.name || "—")}</td>
+        </tr>
+      `).join("");
+      const historyRows = gameweek.player_history.map(row => `
+        <tr>
+          <td>${escapeHTML(row.player && row.player.name || row.player_id)}</td>
+          <td>${escapeHTML(row.status_before)} → ${escapeHTML(row.status_after)}</td>
+          <td>${row.hearts_before}/3 → ${row.hearts_after}/3</td>
+          <td>${row.infected_before ? "INFECTED" : "CLEAR"} → ${row.infected_after ? "INFECTED" : "CLEAR"}</td>
+          <td>${row.active_before ? "ACTIVE" : "OUT"} → ${row.active_after ? "ACTIVE" : "ELIMINATED"}</td>
+        </tr>
+      `).join("");
+
+      return `
+        <article class="history-round">
+          <h3>GW${escapeHTML(gameweek.gw_number)} — ${escapeHTML(gameweek.chapter)}</h3>
+          <h4>Match Results</h4>
+          <div class="table-scroll"><table><thead><tr><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th></tr></thead><tbody>${matchRows}</tbody></table></div>
+          <h4>Survivor Changes</h4>
+          <div class="table-scroll"><table><thead><tr><th>Player</th><th>Status</th><th>Hearts</th><th>Infection</th><th>State</th></tr></thead><tbody>${historyRows}</tbody></table></div>
+        </article>
+      `;
+    }).join("")}
+  `;
+}
+
+const refreshMatchesButton = document.getElementById("refresh-matches-button");
+if (refreshMatchesButton) {
+  refreshMatchesButton.addEventListener("click", async () => {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (!accessToken) {
+      showMessage("SESSION EXPIRED — Please authenticate again.");
+      showLogin();
+      return;
+    }
+    await loadAdminData(accessToken);
+  });
+}
+
+const loadHistoryButton = document.getElementById("load-history-button");
+if (loadHistoryButton) loadHistoryButton.addEventListener("click", loadRoundHistory);
