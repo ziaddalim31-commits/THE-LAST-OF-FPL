@@ -132,3 +132,32 @@ test("provisional or stale FPL data cannot be processed", () => {
     input.live.final = false;
     assert.throws(() => buildGameweekPreview(input), /FPL_GAMEWEEK_NOT_FINAL/);
 });
+
+
+test("a bye survivor is included in history with unchanged state", () => {
+    const input = makeInput();
+    input.players.push({
+        id: 3, name: "Bye Player", status: "NORMAL", hearts: 2,
+        is_infected: false, is_active: true
+    });
+    input.matches = [{ id: 101, player_a_id: 1, player_b_id: 2, status: "PENDING" }];
+    input.byes = [{ id: 501, player_id: 3 }];
+    input.live.players["3"] = {
+        points: 50, vice_captain_points: 4, bench_points: [1, 1, 1, 1]
+    };
+
+    const preview = buildGameweekPreview(input);
+    const byeUpdate = preview.player_updates.find(player => player.player_id === 3);
+
+    assert.ok(byeUpdate);
+    assert.deepEqual(byeUpdate.before, {
+        status: "NORMAL",
+        hearts: 2,
+        is_infected: false,
+        is_active: true
+    });
+    assert.equal(byeUpdate.status, "NORMAL");
+    assert.equal(byeUpdate.hearts, 2);
+    assert.equal(byeUpdate.is_infected, false);
+    assert.equal(byeUpdate.is_active, true);
+});
