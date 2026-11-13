@@ -63,6 +63,28 @@ test("excludes inactive and zero-heart players", () => {
     assert.equal(preview.matches_count, 1);
 });
 
+test("preserves infection state in fixture rows and the preview summary", () => {
+    const roster = players(["SAFE", "DANGER", "NORMAL", "SAFE"]);
+    roster[0].is_infected = true;
+    roster[2].is_infected = true;
+
+    const preview = generateFixtures({ players: roster });
+
+    assert.equal(preview.infected_count, 2);
+    assert.deepEqual(
+        preview.infected_players.map(player => player.id).sort(),
+        [1, 3]
+    );
+
+    const fixturePlayers = preview.matches.flatMap(match => [
+        { id: match.player_a_id, infected: match.player_a_is_infected },
+        { id: match.player_b_id, infected: match.player_b_is_infected }
+    ]);
+    assert.equal(fixturePlayers.find(player => player.id === 1).infected, true);
+    assert.equal(fixturePlayers.find(player => player.id === 3).infected, true);
+    assert.equal(fixturePlayers.find(player => player.id === 2).infected, false);
+  });
+
 test("is deterministic for the same roster and history", () => {
     const input = { players: players(["SAFE", "SAFE", "NORMAL", "DANGER", "DANGER", "NORMAL"]) };
     assert.deepEqual(generateFixtures(input), generateFixtures(input));
