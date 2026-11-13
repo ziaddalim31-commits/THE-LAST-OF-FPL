@@ -18,7 +18,7 @@ async function db(path) {
     const data = await response.json().catch(() => null);
     if (!response.ok) {
         const message = String(data && (data.message || data.code) || "");
-        if (message.includes("player_gameweek_history") || response.status === 404) {
+        if (message.includes("player_gameweek_history") || message.includes("winner_method") || message.includes("tiebreak") || response.status === 404) {
             throw new Error("WORKFLOW_SCHEMA_NOT_INSTALLED");
         }
         throw new Error("DATABASE_READ_FAILED");
