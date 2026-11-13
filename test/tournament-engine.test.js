@@ -37,6 +37,9 @@ test("infected winner transmits infection without taking a heart from a SAFE los
     assert.equal(loser.is_infected, true);
     assert.equal(loser.status, "NORMAL");
     assert.equal(loser.hearts, 3);
+    assert.equal(loser.player_name, "Safe");
+    assert.equal(loser.before.status, "SAFE");
+    assert.equal(loser.before.hearts, 3);
 });
 
 test("a DANGER player who loses loses exactly one heart", () => {
