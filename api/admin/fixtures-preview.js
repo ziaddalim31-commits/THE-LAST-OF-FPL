@@ -156,6 +156,9 @@ module.exports = async function handler(req, res) {
         });
     } catch (error) {
         const message = String(error && error.message || "FIXTURE_PREVIEW_FAILED");
+        if (message.startsWith("UNRESOLVED_TIE:")) {
+            return send(res, 409, { error: "GW10_TIE_UNRESOLVED", detail: message });
+        }
         const known = [
             "PREVIEW_INPUT_INVALID", "GAMEWEEK_NOT_PENDING",
             "CHAPTER_RULESET_NOT_CONFIGURED", "FPL_GAMEWEEK_NOT_FINAL",
