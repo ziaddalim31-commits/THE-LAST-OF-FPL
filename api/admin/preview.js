@@ -1,6 +1,6 @@
 "use strict";
 
-const { buildGameweekPreview } = require("./_lib/tournament-engine");
+const { buildGameweekPreview } = require("../_lib/tournament-engine");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
