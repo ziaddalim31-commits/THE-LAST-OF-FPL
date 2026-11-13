@@ -146,3 +146,78 @@ verifyAdmin().catch((error) => {
   showLogin();
   showMessage("Could not verify administrator access.");
 });
+
+
+const previewButton = document.getElementById("preview-gameweek-button");
+const previewPanel = document.getElementById("gameweek-preview");
+
+function renderGameweekPreview(preview) {
+  const rows = preview.results.map((result) => `
+    <tr>
+      <td>${escapeHTML(result.winner.name)}</td>
+      <td>${result.points_a} – ${result.points_b}</td>
+      <td>${escapeHTML(result.loser.name)}</td>
+      <td>${escapeHTML(result.winner_method)}</td>
+    </tr>
+  `).join("");
+
+  const updates = preview.player_updates.map((player) => `
+    <tr>
+      <td>${escapeHTML(player.player_id)}</td>
+      <td>${escapeHTML(player.status)}</td>
+      <td>${player.hearts}/3</td>
+      <td>${player.is_infected ? "INFECTED" : "CLEAR"}</td>
+      <td>${player.is_active ? "ACTIVE" : "ELIMINATED"}</td>
+    </tr>
+  `).join("");
+
+  const byeText = preview.byes.length
+    ? preview.byes.map(bye => escapeHTML(bye.name || bye.player_id)).join(", ")
+    : "No bye";
+
+  previewPanel.innerHTML = `
+    <h3>GW${preview.gameweek.gw_number} — RESULTS PREVIEW</h3>
+    <p>FPL: ${escapeHTML(preview.fpl.status)} · Updated: ${escapeHTML(preview.fpl.updated_at || "—")}</p>
+    <p>Matches: ${preview.summary.matches} · Active players: ${preview.summary.active_players} · Eliminations: ${preview.summary.eliminations} · Infection transfers: ${preview.summary.infection_transfers}</p>
+    <p>BYE: ${byeText}</p>
+    <h4>Fixture results</h4>
+    <div class="table-scroll"><table><thead><tr><th>Winner</th><th>Points</th><th>Opponent</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <h4>Survivor changes</h4>
+    <div class="table-scroll"><table><thead><tr><th>Player ID</th><th>Status</th><th>Hearts</th><th>Infection</th><th>State</th></tr></thead><tbody>${updates}</tbody></table></div>
+    <p><strong>PREVIEW ONLY — no tournament data has been changed.</strong></p>
+  `;
+}
+
+if (previewButton) {
+  previewButton.addEventListener("click", async () => {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (!accessToken) {
+      showMessage("SESSION EXPIRED — Please authenticate again.");
+      showLogin();
+      return;
+    }
+
+    previewButton.disabled = true;
+    previewButton.textContent = "FETCHING FPL & CALCULATING...";
+    previewPanel.textContent = "Checking final FPL data and validating fixtures...";
+    try {
+      const response = await fetch("/api/admin/preview", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.detail || result.error || "PREVIEW_FAILED");
+      }
+      renderGameweekPreview(result.preview);
+      showMessage("PREVIEW GENERATED — DATABASE UNCHANGED.", true);
+    } catch (error) {
+      previewPanel.textContent = `PREVIEW BLOCKED: ${error.message}. No database changes were made.`;
+      showMessage("Could not generate a safe results preview.");
+    } finally {
+      previewButton.disabled = false;
+      previewButton.textContent = "GENERATE RESULTS PREVIEW";
+    }
+  });
+}
