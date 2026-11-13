@@ -8,7 +8,7 @@ function send(res, status, data) {
     return res.status(status).json(data);
 }
 
-async function db(path) {
+async function db(path, resource) {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
         headers: {
             apikey: SUPABASE_SERVICE_ROLE_KEY,
@@ -17,11 +17,14 @@ async function db(path) {
     });
     const data = await response.json().catch(() => null);
     if (!response.ok) {
-        const message = String(data && (data.message || data.code) || "");
-        if (message.includes("player_gameweek_history") || message.includes("winner_method") || message.includes("tiebreak") || response.status === 404) {
-            throw new Error("WORKFLOW_SCHEMA_NOT_INSTALLED");
-        }
-        throw new Error("DATABASE_READ_FAILED");
+        const error = new Error("HISTORY_READ_FAILED");
+        error.diagnostic = {
+            resource,
+            status: response.status,
+            code: String(data && data.code || "UNKNOWN"),
+            message: String(data && data.message || "No database message").slice(0, 240)
+        };
+        throw error;
     }
     return data;
 }
@@ -61,11 +64,11 @@ module.exports = async function handler(req, res) {
         if (!await requireAdmin(token)) return send(res, 403, { error: "ACCESS_DENIED" });
 
         const [players, gameweeks, matches, byes, history] = await Promise.all([
-            db("players?select=id,name"),
-            db("gameweeks?select=id,gw_number,chapter,status&order=gw_number.desc"),
-            db("matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,winner_method,tiebreak,status&order=id.asc"),
-            db("gameweek_byes?select=id,gameweek_id,player_id"),
-            db("player_gameweek_history?select=gameweek_id,player_id,status_before,status_after,hearts_before,hearts_after,infected_before,infected_after,active_before,active_after,created_at&order=gameweek_id.desc,player_id.asc")
+            db("players?select=id,name", "players"),
+            db("gameweeks?select=id,gw_number,chapter,status&order=gw_number.desc", "gameweeks"),
+            db("matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,winner_method,tiebreak,status&order=id.asc", "matches"),
+            db("gameweek_byes?select=id,gameweek_id,player_id", "gameweek_byes"),
+            db("player_gameweek_history?select=gameweek_id,player_id,status_before,status_after,hearts_before,hearts_after,infected_before,infected_after,active_before,active_after,created_at&order=gameweek_id.desc,player_id.asc", "player_gameweek_history")
         ]);
 
         const playerById = new Map(players.map(player => [String(player.id), player]));
@@ -107,11 +110,13 @@ module.exports = async function handler(req, res) {
             }
         });
     } catch (error) {
-        const message = String(error && error.message || "HISTORY_LOAD_FAILED");
-        if (message === "WORKFLOW_SCHEMA_NOT_INSTALLED") {
-            return send(res, 503, { error: "WORKFLOW_SCHEMA_NOT_INSTALLED" });
+        if (error && error.diagnostic) {
+            console.error("Round history read failed:", error.diagnostic);
+            return send(res, 503, {
+                error: "HISTORY_READ_FAILED",
+                diagnostic: error.diagnostic
+            });
         }
         console.error("Round history failed:", error);
         return send(res, 500, { error: "HISTORY_LOAD_FAILED" });
-    }
 };
