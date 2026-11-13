@@ -1,9 +1,6 @@
 "use strict";
 
 const { generateFixtures, pairKey } = require("../_lib/fixture-generator");
-const { buildGameweekPreview } = require("../_lib/tournament-engine");
-const liveHandler = require("../live");
-const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -88,42 +85,17 @@ module.exports = async function handler(req, res) {
         const previousGameweek = gameweeks.find(row => Number(row.gw_number) === 10);
         if (!previousGameweek) return send(res, 404, { error: "GW10_NOT_FOUND" });
 
-        let roster = players.map(player => ({ ...player }));
         if (String(previousGameweek.status || "").toUpperCase() === "PENDING") {
-            const matches10 = allMatches.filter(row => String(row.gameweek_id) === String(previousGameweek.id));
-            const byes10 = allByes.filter(row => String(row.gameweek_id) === String(previousGameweek.id));
-            if (!matches10.length) return send(res, 409, { error: "GW10_FIXTURES_MISSING" });
-
-            const liveResult = await invokeLiveHandler(liveHandler, 10);
-            const live = liveResult.payload;
-            if (liveResult.statusCode < 200 || liveResult.statusCode >= 300 || live.ok !== true) {
-                return send(res, 503, {
-                    error: "GW10_FPL_DATA_UNAVAILABLE",
-                    detail: live.detail || live.error || `LIVE_API_HTTP_${liveResult.statusCode}`
-                });
-            }
-
-            const preview10 = buildGameweekPreview({
-                gameweek: previousGameweek,
-                players,
-                matches: matches10,
-                byes: byes10,
-                live
+            return send(res, 409, {
+                error: "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED",
+                detail: "Confirm GW10 results first. Then regenerate and approve the GW11 fixtures using the updated survivor roster."
             });
-            const updates = new Map(preview10.player_updates.map(update => [String(update.player_id), update]));
-            roster = roster.map(player => {
-                const update = updates.get(String(player.id));
-                return update ? {
-                    ...player,
-                    status: update.status,
-                    hearts: update.hearts,
-                    is_infected: update.is_infected,
-                    is_active: update.is_active
-                } : player;
-            });
-        } else if (String(previousGameweek.status || "").toUpperCase() !== "COMPLETED") {
+        }
+        if (String(previousGameweek.status || "").toUpperCase() !== "COMPLETED") {
             return send(res, 409, { error: "GW10_STATUS_NOT_READY" });
         }
+
+        const roster = players.map(player => ({ ...player }));
 
         const existingForCurrent = allMatches.some(row => String(row.gameweek_id) === String(gameweek.id)) ||
             allByes.some(row => String(row.gameweek_id) === String(gameweek.id));
