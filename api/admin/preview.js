@@ -1,5 +1,7 @@
 "use strict";
 
+const { createHash } = require("crypto");
+
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
 const liveHandler = require("../live");
 const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
@@ -84,7 +86,10 @@ module.exports = async function handler(req, res) {
         }
 
         const preview = buildGameweekPreview({ gameweek, players, matches, byes, live });
-        return send(res, 200, { success: true, preview });
+        const previewToken = createHash("sha256")
+            .update(JSON.stringify({ gameweek_id: gameweek.id, preview }))
+            .digest("hex");
+        return send(res, 200, { success: true, preview, preview_token: previewToken });
     } catch (error) {
         const message = String(error && error.message || "PREVIEW_FAILED");
         if (message.startsWith("UNRESOLVED_TIE:")) {
