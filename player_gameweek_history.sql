@@ -123,6 +123,8 @@ begin
           select player_a_id as participant_id from public.matches where gameweek_id = p_gameweek_id
           union
           select player_b_id as participant_id from public.matches where gameweek_id = p_gameweek_id
+          union
+          select player_id as participant_id from public.gameweek_byes where gameweek_id = p_gameweek_id
       ) participants;
 
     select count(*) into v_player_count
@@ -174,6 +176,8 @@ begin
               select player_a_id as participant_id from public.matches where gameweek_id = p_gameweek_id
               union
               select player_b_id as participant_id from public.matches where gameweek_id = p_gameweek_id
+              union
+              select player_id as participant_id from public.gameweek_byes where gameweek_id = p_gameweek_id
           ) participants
           left join jsonb_to_recordset(p_player_updates) as x(
               player_id bigint,
