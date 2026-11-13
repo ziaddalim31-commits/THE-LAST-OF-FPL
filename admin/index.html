@@ -81,26 +81,19 @@
         <div id="gw11-fixture-preview" aria-live="polite"></div>
       </section>
 
-      <div class="module-grid">
-        <article class="module">
-          <span>01 / MATCH OPERATIONS</span>
-          <h3>Match Management</h3>
-          <p>Upcoming match creation and score entry.</p>
-          <small>COMING NEXT</small>
-        </article>
-        <article class="module">
-          <span>02 / RESULT CONTROL</span>
-          <h3>Results Preview</h3>
-          <p>Review winners, hearts, statuses and infection changes.</p>
-          <small>COMING NEXT</small>
-        </article>
-        <article class="module">
-          <span>03 / DATABASE</span>
-          <h3>Round History</h3>
-          <p>Review previously confirmed gameweeks.</p>
-          <small>COMING NEXT</small>
-        </article>
-      </div>
+      <section class="admin-data workflow-section" aria-labelledby="match-management-title">
+        <h2 id="match-management-title">MATCH MANAGEMENT</h2>
+        <p>Review approved fixtures and match status. Official FPL scores are loaded during Results Preview; manual score edits are disabled to protect the tournament scoring rules.</p>
+        <button id="refresh-matches-button" type="button">REFRESH MATCHES</button>
+        <div id="match-management-content" aria-live="polite"></div>
+      </section>
+
+      <section class="admin-data workflow-section" aria-labelledby="history-title">
+        <h2 id="history-title">ROUND HISTORY</h2>
+        <p>Browse completed gameweeks, match winners and each survivor's before/after status, hearts and infection.</p>
+        <button id="load-history-button" type="button">LOAD ROUND HISTORY</button>
+        <div id="round-history-content" aria-live="polite"></div>
+      </section>
     </section>
 
     <footer>
