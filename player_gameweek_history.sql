@@ -53,8 +53,8 @@ declare
     v_expected_player_count integer;
     v_history_count integer;
 begin
-    if jsonb_typeof(p_results) <> 'array'
-       or jsonb_typeof(p_player_updates) <> 'array' then
+    if jsonb_typeof(p_results) is distinct from 'array'
+       or jsonb_typeof(p_player_updates) is distinct from 'array' then
         raise exception 'INVALID_CONFIRMATION_PAYLOAD';
     end if;
 
@@ -132,7 +132,7 @@ begin
           hearts integer,
           is_infected boolean,
           is_active boolean,
-          before jsonb
+          "before" jsonb
       );
 
     if v_player_count <> v_expected_player_count then
@@ -152,7 +152,7 @@ begin
               hearts integer,
               is_infected boolean,
               is_active boolean,
-              before jsonb
+              "before" jsonb
           )
           left join public.players p on p.id = x.player_id
          where p.id is null
@@ -160,10 +160,10 @@ begin
             or x.status not in ('SAFE', 'NORMAL', 'DANGER')
             or x.hearts is null or x.hearts < 0 or x.hearts > 3
             or x.is_infected is null or x.is_active is null
-            or coalesce(x.before->>'status', '') <> p.status
-            or coalesce((x.before->>'hearts')::integer, -1) <> p.hearts
-            or coalesce((x.before->>'is_infected')::boolean, false) <> p.is_infected
-            or coalesce((x.before->>'is_active')::boolean, false) <> p.is_active
+            or coalesce(x."before"->>'status', '') <> p.status
+            or coalesce((x."before"->>'hearts')::integer, -1) <> p.hearts
+            or coalesce((x."before"->>'is_infected')::boolean, false) <> p.is_infected
+            or coalesce((x."before"->>'is_active')::boolean, false) <> p.is_active
     ) then
         raise exception 'PLAYER_STATE_CHANGED_SINCE_PREVIEW';
     end if;
@@ -181,7 +181,7 @@ begin
               hearts integer,
               is_infected boolean,
               is_active boolean,
-              before jsonb
+              "before" jsonb
           ) on x.player_id = participants.participant_id
          where x.player_id is null
     ) then
@@ -198,13 +198,13 @@ begin
     select
         p_gameweek_id,
         x.player_id,
-        upper(x.before->>'status'),
+        upper(x."before"->>'status'),
         case when x.is_active then upper(x.status) else 'ELIMINATED' end,
-        (x.before->>'hearts')::integer,
+        (x."before"->>'hearts')::integer,
         x.hearts,
-        (x.before->>'is_infected')::boolean,
+        (x."before"->>'is_infected')::boolean,
         x.is_infected,
-        (x.before->>'is_active')::boolean,
+        (x."before"->>'is_active')::boolean,
         x.is_active
     from jsonb_to_recordset(p_player_updates) as x(
         player_id bigint,
@@ -212,7 +212,7 @@ begin
         hearts integer,
         is_infected boolean,
         is_active boolean,
-        before jsonb
+        "before" jsonb
     );
 
     get diagnostics v_history_count = row_count;
@@ -249,7 +249,7 @@ begin
           hearts integer,
           is_infected boolean,
           is_active boolean,
-          before jsonb
+          "before" jsonb
       )
      where p.id = x.player_id;
 
@@ -299,7 +299,7 @@ declare
     v_covered_count integer;
     v_inserted_count integer;
 begin
-    if jsonb_typeof(p_fixtures) <> 'array' then
+    if jsonb_typeof(p_fixtures) is distinct from 'array' then
         raise exception 'INVALID_FIXTURE_PAYLOAD';
     end if;
 
