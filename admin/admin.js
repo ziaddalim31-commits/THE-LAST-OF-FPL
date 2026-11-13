@@ -468,7 +468,7 @@ async function setupSaveGw11FixturesButton() {
       gw11FixturePanel.innerHTML = `
         <h3>GW11 — FIXTURES SAVED</h3>
         <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
-        <p>Bye: ${result.saved.bye_player_id ? escapeHTML(result.saved.bye_player_id) : "None"}</p>
+        <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
       showMessage("GW11 FIXTURES SAVED.", true);
       await loadAdminData(accessToken);
@@ -529,6 +529,7 @@ function renderRoundHistory(data) {
           <td>${escapeHTML(match.winner && match.winner.name || "—")}</td>
         </tr>
       `).join("");
+      const byeNames = (gameweek.byes || []).map(bye => escapeHTML(bye.player && bye.player.name || bye.player_id)).join(", ") || "None";
       const historyRows = gameweek.player_history.map(row => `
         <tr>
           <td>${escapeHTML(row.player && row.player.name || row.player_id)}</td>
@@ -542,6 +543,7 @@ function renderRoundHistory(data) {
       return `
         <article class="history-round">
           <h3>GW${escapeHTML(gameweek.gw_number)} — ${escapeHTML(gameweek.chapter)}</h3>
+          <p class="workflow-note">BYE: ${byeNames}</p>
           <h4>Match Results</h4>
           <div class="table-scroll"><table><thead><tr><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th></tr></thead><tbody>${matchRows}</tbody></table></div>
           <h4>Survivor Changes</h4>
