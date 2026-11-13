@@ -243,3 +243,80 @@ if (previewButton) {
     }
   });
 }
+
+
+// GW11 fixture generation is deliberately read-only.
+const generateGw11Button = document.getElementById("generate-gw11-button");
+const gw11FixturePanel = document.getElementById("gw11-fixture-preview");
+
+function renderGw11FixturePreview(result) {
+  const preview = result.preview;
+  const priorityRows = Object.entries(preview.priority_counts)
+    .filter(([, count]) => count > 0)
+    .map(([priority, count]) => `<tr><td>${escapeHTML(priority)}</td><td>${count}</td></tr>`)
+    .join("");
+
+  const fixtureRows = preview.matches.map((match, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td><strong>${escapeHTML(match.player_a_name)}</strong><small>${escapeHTML(match.player_a_status)} · ${match.player_a_hearts}/3 hearts</small></td>
+      <td>VS</td>
+      <td><strong>${escapeHTML(match.player_b_name)}</strong><small>${escapeHTML(match.player_b_status)} · ${match.player_b_hearts}/3 hearts</small></td>
+      <td>${escapeHTML(match.priority)}</td>
+    </tr>
+  `).join("");
+
+  const bye = preview.bye
+    ? `<p><strong>BYE:</strong> ${escapeHTML(preview.bye.name)} · ${escapeHTML(preview.bye.status)} · ${preview.bye.hearts}/3 hearts</p>`
+    : "<p><strong>BYE:</strong> None — even number of active players.</p>";
+
+  gw11FixturePanel.innerHTML = `
+    <h3>GW11 — FIXTURE PREVIEW</h3>
+    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through}</p>
+    <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
+    <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER}</p>
+    ${bye}
+    <h4>Pairing priority breakdown</h4>
+    <div class="table-scroll"><table><thead><tr><th>Priority</th><th>Matches</th></tr></thead><tbody>${priorityRows || "<tr><td colspan='2'>No matches</td></tr>"}</tbody></table></div>
+    <h4>Proposed fixtures</h4>
+    <div class="table-scroll"><table><thead><tr><th>#</th><th>Player A</th><th></th><th>Player B</th><th>Rule</th></tr></thead><tbody>${fixtureRows}</tbody></table></div>
+    <p><strong>PREVIEW ONLY — no fixtures or tournament records were saved.</strong></p>
+  `;
+}
+
+if (generateGw11Button) {
+  generateGw11Button.addEventListener("click", async () => {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+    if (!accessToken) {
+      showMessage("SESSION EXPIRED — Please authenticate again.");
+      showLogin();
+      return;
+    }
+
+    generateGw11Button.disabled = true;
+    generateGw11Button.textContent = "CHECKING ROSTER & MATCH HISTORY...";
+    gw11FixturePanel.textContent = "Simulating GW10 updates in memory when needed, then generating a rematch-free GW11 schedule...";
+    try {
+      const response = await fetch("/api/admin/fixtures-preview", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        const details = result.bye_candidates
+          ? " BYE candidates: " + result.bye_candidates.map(player => player.name + " (" + player.status + ")").join(", ")
+          : "";
+        throw new Error((result.detail || result.error || "FIXTURE_PREVIEW_FAILED") + details);
+      }
+      renderGw11FixturePreview(result);
+      showMessage("GW11 FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.", true);
+    } catch (error) {
+      gw11FixturePanel.textContent = `GENERATION BLOCKED: ${error.message}. No database changes were made.`;
+      showMessage("Could not generate a safe GW11 fixture preview.");
+    } finally {
+      generateGw11Button.disabled = false;
+      generateGw11Button.textContent = "GENERATE GW11 FIXTURE PREVIEW";
+    }
+  });
+}
