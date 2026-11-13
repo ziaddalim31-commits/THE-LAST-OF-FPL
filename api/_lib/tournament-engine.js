@@ -190,6 +190,26 @@ function buildGameweekPreview(input) {
         });
     }
 
+    // A bye is still a survivor's gameweek record: preserve an unchanged snapshot.
+    for (const bye of byes) {
+        const player = activeById.get(String(bye.player_id));
+        const before = {
+            status: normalizeStatus(player.status),
+            hearts: Math.max(0, Math.min(3, Number(player.hearts) || 0)),
+            is_infected: player.is_infected === true,
+            is_active: player.is_active !== false
+        };
+        updates.set(String(player.id), {
+            player_id: player.id,
+            player_name: player.name,
+            status: before.status,
+            hearts: before.hearts,
+            is_infected: before.is_infected,
+            is_active: before.is_active,
+            before
+        });
+    }
+
     return {
         gameweek: { id: gameweek.id, gw_number: gw, chapter: gameweek.chapter },
         fpl: {
