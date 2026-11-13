@@ -335,6 +335,8 @@ module.exports = async function handler(req, res) {
             fpl_entry_id: entryId,
             points: score.points,
             on_field: score.onField,
+            vice_captain_points: score.vice_captain_points,
+            bench_points: score.bench_points,
             stale: Boolean(picksResult.stale),
             error: score.error
         };
