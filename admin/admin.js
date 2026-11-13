@@ -152,24 +152,37 @@ const previewButton = document.getElementById("preview-gameweek-button");
 const previewPanel = document.getElementById("gameweek-preview");
 
 function renderGameweekPreview(preview) {
-  const rows = preview.results.map((result) => `
-    <tr>
-      <td>${escapeHTML(result.winner.name)}</td>
-      <td>${result.points_a} – ${result.points_b}</td>
-      <td>${escapeHTML(result.loser.name)}</td>
-      <td>${escapeHTML(result.winner_method)}</td>
-    </tr>
-  `).join("");
+  const rows = preview.results.map((result) => {
+    const tieValues = result.tiebreak && result.tiebreak.values;
+    const decision = tieValues
+      ? `${result.winner_method} (A: ${tieValues[String(result.player_a_id)]} · B: ${tieValues[String(result.player_b_id)]})`
+      : result.winner_method;
+    return `
+      <tr>
+        <td>${escapeHTML(result.winner.name)}</td>
+        <td>${result.points_a} – ${result.points_b}</td>
+        <td>${escapeHTML(result.loser.name)}</td>
+        <td>${escapeHTML(decision)}</td>
+      </tr>
+    `;
+  }).join("");
 
-  const updates = preview.player_updates.map((player) => `
-    <tr>
-      <td>${escapeHTML(player.player_id)}</td>
-      <td>${escapeHTML(player.status)}</td>
-      <td>${player.hearts}/3</td>
-      <td>${player.is_infected ? "INFECTED" : "CLEAR"}</td>
-      <td>${player.is_active ? "ACTIVE" : "ELIMINATED"}</td>
-    </tr>
-  `).join("");
+  const updates = preview.player_updates.map((player) => {
+    const before = player.before || {};
+    const beforeInfection = before.is_infected ? "INFECTED" : "CLEAR";
+    const afterInfection = player.is_infected ? "INFECTED" : "CLEAR";
+    const beforeState = before.is_active ? "ACTIVE" : "ELIMINATED";
+    const afterState = player.is_active ? "ACTIVE" : "ELIMINATED";
+    return `
+      <tr>
+        <td>${escapeHTML(player.player_name || player.player_id)} (#${escapeHTML(player.player_id)})</td>
+        <td>${escapeHTML(before.status)} → ${escapeHTML(player.status)}</td>
+        <td>${before.hearts}/3 → ${player.hearts}/3</td>
+        <td>${beforeInfection} → ${afterInfection}</td>
+        <td>${beforeState} → ${afterState}</td>
+      </tr>
+    `;
+  }).join("");
 
   const byeText = preview.byes.length
     ? preview.byes.map(bye => escapeHTML(bye.name || bye.player_id)).join(", ")
@@ -183,7 +196,7 @@ function renderGameweekPreview(preview) {
     <h4>Fixture results</h4>
     <div class="table-scroll"><table><thead><tr><th>Winner</th><th>Points</th><th>Opponent</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table></div>
     <h4>Survivor changes</h4>
-    <div class="table-scroll"><table><thead><tr><th>Player ID</th><th>Status</th><th>Hearts</th><th>Infection</th><th>State</th></tr></thead><tbody>${updates}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Player</th><th>Status (before → after)</th><th>Hearts (before → after)</th><th>Infection (before → after)</th><th>State (before → after)</th></tr></thead><tbody>${updates}</tbody></table></div>
     <p><strong>PREVIEW ONLY — no tournament data has been changed.</strong></p>
   `;
 }
