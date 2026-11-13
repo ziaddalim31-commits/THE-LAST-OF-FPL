@@ -16,10 +16,11 @@ jobs:
         with:
           node-version: 20
       - name: Run tournament engine tests
-        run: node --test test/tournament-engine.test.js
+        run: node --test test/*.test.js
       - name: Syntax-check API files
         run: |
           node --check api/live.js
           node --check api/admin.js
           node --check api/admin/preview.js
           node --check api/_lib/tournament-engine.js
+          node --check api/_lib/invoke-live-handler.js
