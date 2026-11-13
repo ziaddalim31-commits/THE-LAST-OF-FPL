@@ -153,14 +153,17 @@ const previewPanel = document.getElementById("gameweek-preview");
 
 function renderGameweekPreview(preview) {
   const rows = preview.results.map((result) => {
+    const winnerIsA = String(result.winner_id) === String(result.player_a_id);
+    const winnerPoints = winnerIsA ? result.points_a : result.points_b;
+    const loserPoints = winnerIsA ? result.points_b : result.points_a;
     const tieValues = result.tiebreak && result.tiebreak.values;
     const decision = tieValues
-      ? `${result.winner_method} (A: ${tieValues[String(result.player_a_id)]} · B: ${tieValues[String(result.player_b_id)]})`
+      ? `${result.winner_method} (Winner: ${tieValues[String(result.winner_id)]} · Opponent: ${tieValues[String(result.winnerIsA ? result.player_b_id : result.player_a_id)]})`
       : result.winner_method;
     return `
       <tr>
         <td>${escapeHTML(result.winner.name)}</td>
-        <td>${result.points_a} – ${result.points_b}</td>
+        <td>${winnerPoints} – ${loserPoints}</td>
         <td>${escapeHTML(result.loser.name)}</td>
         <td>${escapeHTML(decision)}</td>
       </tr>
@@ -194,7 +197,7 @@ function renderGameweekPreview(preview) {
     <p>Matches: ${preview.summary.matches} · Active players: ${preview.summary.active_players} · Eliminations: ${preview.summary.eliminations} · Infection transfers: ${preview.summary.infection_transfers}</p>
     <p>BYE: ${byeText}</p>
     <h4>Fixture results</h4>
-    <div class="table-scroll"><table><thead><tr><th>Winner</th><th>Points</th><th>Opponent</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Winner</th><th>Winner – opponent points</th><th>Opponent</th><th>Decision</th></tr></thead><tbody>${rows}</tbody></table></div>
     <h4>Survivor changes</h4>
     <div class="table-scroll"><table><thead><tr><th>Player</th><th>Status (before → after)</th><th>Hearts (before → after)</th><th>Infection (before → after)</th><th>State (before → after)</th></tr></thead><tbody>${updates}</tbody></table></div>
     <p><strong>PREVIEW ONLY — no tournament data has been changed.</strong></p>
