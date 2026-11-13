@@ -244,3 +244,80 @@ footer span { color: var(--accent); }
 #gw11-fixture-preview td small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
 #gw11-fixture-preview tr:last-child td { border-bottom: 0; }
 #generate-gw11-button { max-width: 360px; }
+
+
+/* Operational workflow modules */
+.workflow-section {
+  margin-top: 28px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  background: linear-gradient(145deg, #111b14, #0c120e);
+}
+.workflow-section h2 {
+  color: var(--accent);
+  font-size: 27px;
+  margin: 0 0 8px;
+}
+.workflow-section > p,
+.workflow-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.workflow-section button,
+#gameweek-preview button,
+#gw11-fixture-preview button {
+  width: auto;
+  max-width: 360px;
+  min-width: 220px;
+  margin: 14px 0;
+  padding: 12px 18px;
+}
+#match-management-content,
+#round-history-content {
+  margin-top: 18px;
+}
+#match-management-content table,
+#round-history-content table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+#match-management-content th,
+#match-management-content td,
+#round-history-content th,
+#round-history-content td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+#match-management-content th,
+#round-history-content th {
+  color: var(--accent);
+  background: #17231a;
+  font: 700 13px "Barlow Condensed";
+  letter-spacing: .7px;
+}
+.history-round {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.history-round h3 {
+  color: var(--accent);
+  font-size: 25px;
+}
+.history-round h4 {
+  margin: 18px 0 9px;
+  font: 700 17px "Barlow Condensed";
+}
+@media (max-width: 650px) {
+  .workflow-section { padding: 16px; }
+  .workflow-section button,
+  #gameweek-preview button,
+  #gw11-fixture-preview button {
+    width: 100%;
+    max-width: none;
+  }
+}
