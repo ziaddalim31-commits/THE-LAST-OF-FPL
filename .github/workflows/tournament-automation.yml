@@ -19,6 +19,7 @@ jobs:
         run: node --test test/*.test.js
       - name: Syntax-check API files
         run: |
+          node --check admin/admin.js
           node --check api/live.js
           node --check api/admin.js
           node --check api/admin/preview.js
