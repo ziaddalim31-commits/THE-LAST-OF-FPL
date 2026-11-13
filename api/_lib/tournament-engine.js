@@ -37,7 +37,7 @@ function resolveTie(a, b, liveA, liveB) {
     const benchB = liveB && liveB.bench_points;
     if (!Array.isArray(benchA) || !Array.isArray(benchB) ||
         benchA.length !== 4 || benchB.length !== 4 ||
-        [...benchA, ...benchB].some(value => !Number.isFinite(Number(value)))) {
+        [...benchA, ...benchB].some(value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value)))) {
         return { winner: null, method: "UNRESOLVED", reason: "BENCH_TIEBREAK_DATA_INCOMPLETE" };
     }
 
