@@ -23,6 +23,13 @@ create table if not exists public.player_gameweek_history (
         unique (gameweek_id, player_id)
 );
 
+-- Older installations may have legacy status/hearts columns that are NOT NULL.
+-- They are no longer written by the snapshot schema; keep them nullable so the
+-- new before/after history inserts work on upgraded databases.
+alter table public.player_gameweek_history
+    alter column status drop not null,
+    alter column hearts drop not null;
+
 create index if not exists idx_player_gameweek_history_player
     on public.player_gameweek_history (player_id, gameweek_id);
 
