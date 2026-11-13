@@ -23,4 +23,6 @@ jobs:
           node --check api/admin.js
           node --check api/admin/preview.js
           node --check api/_lib/tournament-engine.js
+          node --check api/_lib/fixture-generator.js
+          node --check api/admin/fixtures-preview.js
           node --check api/_lib/invoke-live-handler.js
