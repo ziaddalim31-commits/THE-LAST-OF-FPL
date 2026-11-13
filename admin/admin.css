@@ -216,3 +216,17 @@ footer span { color: var(--accent); }
   .dashboard-heading { align-items: flex-start; gap: 15px; }
   .dashboard-heading h2 { font-size: 32px; }
 }
+
+
+#gameweek-preview { margin-top: 22px; }
+#gameweek-preview h3 { color: var(--accent); font-size: 28px; margin-bottom: 8px; }
+#gameweek-preview h4 { margin: 24px 0 10px; font: 700 18px "Barlow Condensed"; }
+#gameweek-preview p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+#gameweek-preview p strong { color: var(--accent); }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); }
+#gameweek-preview table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 12px; }
+#gameweek-preview th, #gameweek-preview td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+#gameweek-preview th { color: var(--accent); background: #17231a; font: 700 13px "Barlow Condensed"; letter-spacing: .7px; }
+#gameweek-preview td { color: var(--text); }
+#gameweek-preview tr:last-child td { border-bottom: 0; }
+#preview-gameweek-button { max-width: 360px; }
