@@ -168,16 +168,28 @@ function scoreEntry(picksPayload, elements) {
     let total = 0;
     let onField = 0;
     let missing = 0;
+    let viceCaptainPoints = null;
+    const benchPoints = [];
 
     for (const pick of picks) {
         const position = Number(pick.position);
-        if (!Number.isFinite(position) || position < 1 || position > 11) continue;
+        if (!Number.isFinite(position) || position < 1) continue;
 
-        // Bench (including Bench Boost) never counts; Triple Captain bonus is capped at x2.
+        const element = elements.get(Number(pick.element)) || null;
+
+        if (position > 11) {
+            benchPoints.push(element ? element.points : null);
+            continue;
+        }
+
+        if (pick.is_vice_captain) {
+            viceCaptainPoints = element ? element.points : null;
+        }
+
+        // Tournament scoring: starting XI only; captain multiplier is capped at x2.
         const multiplier = Math.min(Number(pick.multiplier) || 0, 2);
         if (multiplier <= 0) continue;
 
-        const element = elements.get(pick.element);
         if (!element) {
             missing += 1;
             continue;
@@ -187,18 +199,32 @@ function scoreEntry(picksPayload, elements) {
         onField += 1;
     }
 
-    if (missing > 0) return { points: null, onField, cost: 0, error: "element_missing" };
+    if (missing > 0) {
+        return {
+            points: null, onField, cost: 0, error: "element_missing",
+            vice_captain_points: viceCaptainPoints,
+            bench_points: benchPoints.length === 4 ? benchPoints : null
+        };
+    }
 
     const history = picksPayload.entry_history || null;
     const rawCost = history ? Number(history.event_transfers_cost) : 0;
     const cost = Number.isFinite(rawCost) && rawCost > 0 ? rawCost : 0;
 
-    return { points: total - cost, onField, cost, error: null };
+    return {
+        points: total - cost,
+        onField,
+        cost,
+        error: null,
+        vice_captain_points: viceCaptainPoints,
+        bench_points: benchPoints.length === 4 ? benchPoints : null
+    };
 }
 
 function deriveStatus(event) {
     if (!event) return "UNKNOWN";
-    if (event.finished) return "FINISHED";
+    if (event.finished && event.data_checked) return "FINAL";
+    if (event.finished) return "CHECKING";
     if (event.is_current) return "LIVE";
     return "UPCOMING";
 }
@@ -315,23 +341,26 @@ module.exports = async function handler(req, res) {
     }
 
     const status = deriveStatus(event);
+    const final = Boolean(event && event.finished && event.data_checked);
 
     send(res, 200, {
         ok: true,
         phase: "1A",
         gw,
         status,
-        provisional: true,
+        final,
+        data_checked: Boolean(event && event.data_checked),
+        provisional: !final,
         stale,
         updated_at: new Date(liveResult.at).toISOString(),
         source: "fantasy.premierleague.com",
         players,
         warnings: [
-            "Provisional scores: starting XI only — bench points and Bench Boost are excluded.",
-            "Triple Captain bonus is excluded; the captain is counted at x2.",
+            "Tournament scoring uses the starting XI only; bench points are excluded except for the official tie-break.",
+            "Captain multiplier is capped at x2. Bench Boost and Triple Captain bonuses are not applied.",
             "Transfer hits (entry_history.event_transfers_cost) are deducted.",
-            "Automatic substitutions (autosubs) are not applied.",
-            "Numbers may change until the gameweek is officially completed."
+            "Automatic substitutions are not applied by this tournament scoring model.",
+            ...(final ? [] : ["FPL has not marked this gameweek as fully checked; results cannot be approved yet."])
         ]
     }, "public, s-maxage=30, stale-while-revalidate=60");
 };
