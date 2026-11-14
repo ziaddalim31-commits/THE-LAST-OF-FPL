@@ -369,6 +369,7 @@ set search_path = public
 as $$
 declare
     v_gw_number integer;
+    v_gw_chapter text;
     v_gw_status text;
     v_active_count integer;
     v_fixture_count integer;
@@ -381,8 +382,8 @@ begin
         raise exception 'INVALID_FIXTURE_PAYLOAD';
     end if;
 
-    select gw_number, upper(status)
-      into v_gw_number, v_gw_status
+    select gw_number, chapter, upper(status)
+      into v_gw_number, v_gw_chapter, v_gw_status
       from public.gameweeks
      where id = p_gameweek_id
      for update;
@@ -479,6 +480,7 @@ begin
            )
           join public.gameweeks old_gw on old_gw.id = old_match.gameweek_id
          where old_gw.gw_number < v_gw_number
+           and upper(trim(coalesce(old_gw.chapter, ''))) = upper(trim(coalesce(v_gw_chapter, '')))
     ) then
         raise exception 'REMATCH_NOT_ALLOWED';
     end if;
