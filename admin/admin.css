@@ -321,3 +321,33 @@ footer span { color: var(--accent); }
     max-width: none;
   }
 }
+
+
+.workflow-warning {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-left: 3px solid #d5a34a;
+  background: rgba(213, 163, 74, .09);
+  color: #f0d6a5;
+  font-size: 12px;
+  line-height: 1.7;
+}
+#gw11-fixture-preview label,
+#gw11-fixture-preview select {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+}
+#gw11-fixture-preview label {
+  margin: 16px 0 7px;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: .8px;
+}
+#gw11-fixture-preview select {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: #0b120d;
+  color: var(--text);
+  border-radius: 4px;
+}
