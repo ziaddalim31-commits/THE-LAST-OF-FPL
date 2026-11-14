@@ -295,6 +295,57 @@ function renderGw11FixturePreview(result) {
   `;
 }
 
+async function requestNextGameweekFixturePreview(accessToken, byePlayerId = null) {
+  const endpoint = byePlayerId
+    ? `/api/admin/fixtures-preview?bye_player_id=${encodeURIComponent(byePlayerId)}`
+    : "/api/admin/fixtures-preview";
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    if (result.error === "BYE_PLAYER_SELECTION_REQUIRED" && Array.isArray(result.bye_candidates)) {
+      renderByePlayerSelection(result.bye_candidates, accessToken);
+      return;
+    }
+    throw new Error(result.detail || result.error || "FIXTURE_PREVIEW_FAILED");
+  }
+
+  renderGw11FixturePreview(result);
+  setupSaveGw11FixturesButton();
+  showMessage(`GW${result.gameweek.gw_number} FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.`, true);
+}
+
+function renderByePlayerSelection(candidates, accessToken) {
+  const options = candidates.map(player =>
+    `<option value="${escapeHTML(player.id)}">${escapeHTML(player.name)} — ${escapeHTML(player.status)} — ${escapeHTML(player.hearts)}/3 hearts</option>`
+  ).join("");
+
+  gw11FixturePanel.innerHTML = `
+    <h3>BYE PLAYER SELECTION REQUIRED</h3>
+    <p>The active roster is odd. Select the survivor who will receive the BYE this gameweek.</p>
+    <label for="next-bye-player">SELECT BYE PLAYER</label>
+    <select id="next-bye-player">${options}</select>
+    <button id="generate-with-bye-button" type="button">CONFIRM BYE & GENERATE FIXTURES</button>
+  `;
+
+  const button = document.getElementById("generate-with-bye-button");
+  button.addEventListener("click", async () => {
+    const select = document.getElementById("next-bye-player");
+    if (!select || !select.value) return;
+    button.disabled = true;
+    button.textContent = "GENERATING FIXTURES...";
+    try {
+      await requestNextGameweekFixturePreview(accessToken, select.value);
+    } catch (error) {
+      gw11FixturePanel.textContent = `GENERATION BLOCKED: ${error.message}. No database changes were made.`;
+      showMessage("Could not generate a safe next-gameweek fixture preview.");
+    }
+  });
+}
+
 if (generateGw11Button) {
   generateGw11Button.addEventListener("click", async () => {
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -309,20 +360,7 @@ if (generateGw11Button) {
     generateGw11Button.textContent = "CHECKING ROSTER & MATCH HISTORY...";
     gw11FixturePanel.textContent = "Checking the previous gameweek, simulating results in memory when necessary, then generating a rematch-free schedule...";
     try {
-      const response = await fetch("/api/admin/fixtures-preview", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        const details = result.bye_candidates
-          ? " BYE candidates: " + result.bye_candidates.map(player => player.name + " (" + player.status + ")").join(", ")
-          : "";
-        throw new Error((result.detail || result.error || "FIXTURE_PREVIEW_FAILED") + details);
-      }
-      renderGw11FixturePreview(result);
-      setupSaveGw11FixturesButton();
-      showMessage(`GW${result.gameweek.gw_number} FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.`, true);
+      await requestNextGameweekFixturePreview(accessToken);
     } catch (error) {
       gw11FixturePanel.textContent = `GENERATION BLOCKED: ${error.message}. No database changes were made.`;
       showMessage("Could not generate a safe next-gameweek fixture preview.");
@@ -332,7 +370,6 @@ if (generateGw11Button) {
     }
   });
 }
-
 
 // Match Management: persisted fixtures are read-only here; FPL is the score source.
 function renderMatchManagement(data) {
