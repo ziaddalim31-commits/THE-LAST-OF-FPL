@@ -563,17 +563,23 @@ function renderRoundHistory(data) {
 
   panel.innerHTML = `
     <p><strong>${data.totals.completed_gameweeks} completed gameweeks · ${data.totals.completed_matches} matches · ${data.totals.history_rows} survivor history records</strong></p>
+    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history
+      ? `<p class="workflow-warning">DATA GAPS: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no stored match results; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots. Historical values are not fabricated.</p>`
+      : ""}
     ${data.gameweeks.map(gameweek => {
-      const matchRows = gameweek.matches.map(match => `
+      const matchRows = gameweek.matches.length
+        ? gameweek.matches.map(match => `
         <tr>
           <td>${escapeHTML(match.player_a && match.player_a.name || match.player_a_id)}</td>
           <td>${match.points_a ?? "—"} – ${match.points_b ?? "—"}</td>
           <td>${escapeHTML(match.player_b && match.player_b.name || match.player_b_id)}</td>
           <td>${escapeHTML(match.winner && match.winner.name || "—")}</td>
         </tr>
-      `).join("");
+      `).join("")
+        : `<tr><td colspan="4">No match results are stored for this gameweek.</td></tr>`;
       const byeNames = (gameweek.byes || []).map(bye => escapeHTML(bye.player && bye.player.name || bye.player_id)).join(", ") || "None";
-      const historyRows = gameweek.player_history.map(row => `
+      const historyRows = gameweek.player_history.length
+        ? gameweek.player_history.map(row => `
         <tr>
           <td>${escapeHTML(row.player && row.player.name || row.player_id)}</td>
           <td>${escapeHTML(row.status_before)} → ${escapeHTML(row.status_after)}</td>
@@ -581,7 +587,8 @@ function renderRoundHistory(data) {
           <td>${row.infected_before ? "INFECTED" : "CLEAR"} → ${row.infected_after ? "INFECTED" : "CLEAR"}</td>
           <td>${row.active_before ? "ACTIVE" : "OUT"} → ${row.active_after ? "ACTIVE" : "ELIMINATED"}</td>
         </tr>
-      `).join("");
+      `).join("")
+        : `<tr><td colspan="5">No survivor snapshots are stored for this gameweek.</td></tr>`;
 
       return `
         <article class="history-round">
