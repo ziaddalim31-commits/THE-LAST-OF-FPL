@@ -251,7 +251,7 @@ if (previewButton) {
 }
 
 
-// GW11 fixture generation is deliberately read-only.
+// Next-gameweek fixture generation is deliberately read-only.
 const generateGw11Button = document.getElementById("generate-gw11-button");
 const gw11FixturePanel = document.getElementById("gw11-fixture-preview");
 
@@ -280,7 +280,7 @@ function renderGw11FixturePreview(result) {
     : "<p><strong>BYE:</strong> None — even number of active players.</p>";
 
   gw11FixturePanel.innerHTML = `
-    <h3>GW11 — FIXTURE PREVIEW</h3>
+    <h3>GW${escapeHTML(result.gameweek.gw_number)} — FIXTURE PREVIEW</h3>
     <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through}</p>
     <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
     <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER} · INFECTED: ${preview.infected_count}</p>
@@ -291,7 +291,7 @@ function renderGw11FixturePreview(result) {
     <h4>Proposed fixtures</h4>
     <div class="table-scroll"><table><thead><tr><th>#</th><th>Player A</th><th></th><th>Player B</th><th>Rule</th></tr></thead><tbody>${fixtureRows}</tbody></table></div>
     <p><strong>PREVIEW ONLY — no fixtures or tournament records were saved.</strong></p>
-    <button id="save-gw11-fixtures-button" type="button">SAVE APPROVED GW11 FIXTURES</button>
+    <button id="save-gw11-fixtures-button" type="button">SAVE APPROVED GW${escapeHTML(result.gameweek.gw_number)} FIXTURES</button>
   `;
 }
 
@@ -307,7 +307,7 @@ if (generateGw11Button) {
 
     generateGw11Button.disabled = true;
     generateGw11Button.textContent = "CHECKING ROSTER & MATCH HISTORY...";
-    gw11FixturePanel.textContent = "Simulating GW10 updates in memory when needed, then generating a rematch-free GW11 schedule...";
+    gw11FixturePanel.textContent = "Checking the previous gameweek, simulating results in memory when necessary, then generating a rematch-free schedule...";
     try {
       const response = await fetch("/api/admin/fixtures-preview", {
         method: "GET",
@@ -322,13 +322,13 @@ if (generateGw11Button) {
       }
       renderGw11FixturePreview(result);
       setupSaveGw11FixturesButton();
-      showMessage("GW11 FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.", true);
+      showMessage(`GW${result.gameweek.gw_number} FIXTURE PREVIEW GENERATED — DATABASE UNCHANGED.`, true);
     } catch (error) {
       gw11FixturePanel.textContent = `GENERATION BLOCKED: ${error.message}. No database changes were made.`;
-      showMessage("Could not generate a safe GW11 fixture preview.");
+      showMessage("Could not generate a safe next-gameweek fixture preview.");
     } finally {
       generateGw11Button.disabled = false;
-      generateGw11Button.textContent = "GENERATE GW11 FIXTURE PREVIEW";
+      generateGw11Button.textContent = "GENERATE NEXT GAMEWEEK FIXTURE PREVIEW";
     }
   });
 }
@@ -340,7 +340,7 @@ function renderMatchManagement(data) {
   if (!panel) return;
 
   if (!data.matches || data.matches.length === 0) {
-    panel.innerHTML = "<p>No fixtures are saved for the current gameweek yet. Generate and review the GW11 preview above.</p>";
+    panel.innerHTML = "<p>No fixtures are saved for the current gameweek yet. Generate and review the next-gameweek preview above.</p>";
     return;
   }
 
@@ -434,7 +434,7 @@ async function setupSaveGw11FixturesButton() {
   if (!button || !lastGw11FixturePreview) return;
 
   button.addEventListener("click", async () => {
-    if (!window.confirm("Save these exact GW11 fixtures and the displayed bye to Supabase?")) return;
+    if (!window.confirm(`Save these exact GW${lastGw11FixturePreview.gameweek.gw_number} fixtures and the displayed bye to Supabase?`)) return;
 
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
@@ -466,15 +466,15 @@ async function setupSaveGw11FixturesButton() {
 
       lastGw11FixturePreview = null;
       gw11FixturePanel.innerHTML = `
-        <h3>GW11 — FIXTURES SAVED</h3>
+        <h3>GW${escapeHTML(lastGw11FixturePreview.gameweek.gw_number)} — FIXTURES SAVED</h3>
         <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
         <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
-      showMessage("GW11 FIXTURES SAVED.", true);
+      showMessage(`GW${lastGw11FixturePreview.gameweek.gw_number} FIXTURES SAVED.`, true);
       await loadAdminData(accessToken);
     } catch (error) {
       button.disabled = false;
-      button.textContent = "SAVE APPROVED GW11 FIXTURES";
+      button.textContent = `SAVE APPROVED GW${lastGw11FixturePreview.gameweek.gw_number} FIXTURES`;
       showMessage(`FIXTURES NOT SAVED: ${error.message}`);
     }
   });
