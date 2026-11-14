@@ -56,6 +56,7 @@ function generateFixtures(input) {
         throw new Error("PLAYER_STATUS_INVALID");
     }
     if (roster.length < 2) throw new Error("NOT_ENOUGH_ACTIVE_PLAYERS");
+    if (roster.length > 24) throw new Error("ROSTER_TOO_LARGE");
 
     roster.sort((a, b) =>
         STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
@@ -90,8 +91,6 @@ function generateFixtures(input) {
     } else if (byePlayerId !== null && byePlayerId !== undefined && byePlayerId !== "") {
         throw new Error("BYE_NOT_REQUIRED");
     }
-
-    if (roster.length > 24) throw new Error("ROSTER_TOO_LARGE");
 
     const previousPairs = new Set();
     for (const match of previousMatches) {
