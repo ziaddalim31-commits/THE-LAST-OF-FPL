@@ -43,6 +43,24 @@ test("never repeats a historical opponent when an alternative exists", () => {
     ));
 });
 
+test("blocks rematches within the same chapter but allows rematches from earlier chapters", () => {
+    const { filterPreviousMatchesToChapter } = require("../api/_lib/fixture-generator");
+    const gameweeks = [
+        { id: 8, gw_number: 8, chapter: "CHAPTER I — THE QUARANTINE ZONE" },
+        { id: 9, gw_number: 9, chapter: "CHAPTER II — THE INFECTION" },
+        { id: 10, gw_number: 10, chapter: "CHAPTER II — THE INFECTION" },
+        { id: 11, gw_number: 11, chapter: "CHAPTER II — THE INFECTION" }
+    ];
+    const matches = [
+        { gameweek_id: 8, player_a_id: 1, player_b_id: 2 },
+        { gameweek_id: 9, player_a_id: 1, player_b_id: 3 },
+        { gameweek_id: 10, player_a_id: 2, player_b_id: 4 }
+    ];
+    const relevant = filterPreviousMatchesToChapter(matches, gameweeks, gameweeks[3]);
+    assert.deepEqual(relevant, matches.slice(1));
+    assert.ok(!relevant.some(match => match.gameweek_id === 8));
+});
+
 test("requires an explicit BYE selection for an odd roster", () => {
     const roster = players(["SAFE", "NORMAL", "DANGER"]);
     assert.throws(
