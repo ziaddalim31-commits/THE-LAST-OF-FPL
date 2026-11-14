@@ -100,3 +100,16 @@ test("blocks generation when all remaining pairings require a rematch", () => {
         /REMATCH_FREE_SCHEDULE_IMPOSSIBLE/
     );
 });
+
+test("rejects a roster above the 24-survivor tournament limit before BYE selection", () => {
+    const roster = players([
+        ...Array(9).fill("SAFE"),
+        ...Array(8).fill("NORMAL"),
+        ...Array(8).fill("DANGER")
+    ]);
+    assert.equal(roster.length, 25);
+    assert.throws(
+        () => generateFixtures({ players: roster, byePlayerId: 25 }),
+        /ROSTER_TOO_LARGE/
+    );
+});
