@@ -66,10 +66,38 @@ module.exports = async function handler(req, res) {
             db("gameweek_byes?select=id,gameweek_id,player_id")
         ]);
 
-        const pendingGameweek = gameweeks
+        const pendingGameweeks = gameweeks
             .filter(row => String(row.status || "").trim().toUpperCase() === "PENDING")
-            .sort((a, b) => Number(a.gw_number) - Number(b.gw_number))[0];
-        if (!pendingGameweek) return send(res, 404, { error: "PENDING_GAMEWEEK_NOT_FOUND" });
+            .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
+
+        // Generate fixtures for the earliest pending gameweek that has no
+        // fixtures yet and directly follows the earliest unresolved round.
+        // This lets GW11 be previewed while GW10 is still pending, without
+        // accidentally skipping an unresolved gameweek.
+        const pendingGameweek = pendingGameweeks.find(row => {
+            const candidateGw = Number(row.gw_number);
+            const previous = gameweeks.find(item => Number(item.gw_number) === candidateGw - 1);
+            const hasFixtures = allMatches.some(match => String(match.gameweek_id) === String(row.id)) ||
+                allByes.some(bye => String(bye.gameweek_id) === String(row.id));
+            const earlierPending = pendingGameweeks.some(item => Number(item.gw_number) < candidateGw - 1);
+            return !hasFixtures && previous &&
+                ["PENDING", "COMPLETED"].includes(String(previous.status || "").toUpperCase()) &&
+                !earlierPending;
+        });
+
+        if (!pendingGameweek) {
+            return send(res, 409, {
+                error: pendingGameweeks.length
+                    ? "NEXT_GAMEWEEK_FIXTURE_TARGET_NOT_AVAILABLE"
+                    : "PENDING_GAMEWEEK_NOT_FOUND",
+                pending_gameweeks: pendingGameweeks.map(row => ({
+                    gw_number: row.gw_number,
+                    status: row.status,
+                    has_fixtures: allMatches.some(match => String(match.gameweek_id) === String(row.id)) ||
+                        allByes.some(bye => String(bye.gameweek_id) === String(row.id))
+                }))
+            });
+        }
 
         const currentGw = Number(pendingGameweek.gw_number);
         if (!Number.isInteger(currentGw) || currentGw < 2 || currentGw > 38) {
@@ -79,17 +107,6 @@ module.exports = async function handler(req, res) {
         const previousGameweek = gameweeks.find(row => Number(row.gw_number) === currentGw - 1);
         if (!previousGameweek) {
             return send(res, 404, { error: "PREVIOUS_GAMEWEEK_NOT_FOUND", previous_gw: currentGw - 1 });
-        }
-
-        const matchesCurrent = allMatches.filter(row => String(row.gameweek_id) === String(pendingGameweek.id));
-        const byesCurrent = allByes.filter(row => String(row.gameweek_id) === String(pendingGameweek.id));
-        if (matchesCurrent.length || byesCurrent.length) {
-            return send(res, 409, {
-                error: "FIXTURES_ALREADY_EXIST",
-                gameweek: currentGw,
-                existing_matches: matchesCurrent.length,
-                existing_byes: byesCurrent.length
-            });
         }
 
         let rosterForCurrent = players.map(player => ({ ...player }));
