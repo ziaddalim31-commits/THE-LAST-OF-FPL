@@ -78,32 +78,31 @@ module.exports = async function handler(req, res) {
             .filter(row => String(row.status || "").trim().toUpperCase() === "PENDING")
             .sort((a, b) => Number(a.gw_number) - Number(b.gw_number))[0];
         if (!gameweek) return send(res, 404, { error: "PENDING_GAMEWEEK_NOT_FOUND" });
-        if (Number(gameweek.gw_number) !== 11) {
-            return send(res, 409, { error: "FIXTURE_SAVE_SUPPORTED_GW11_ONLY" });
+
+        const currentGw = Number(gameweek.gw_number);
+        if (!Number.isInteger(currentGw) || currentGw < 2 || currentGw > 38) {
+            return send(res, 409, { error: "CURRENT_GAMEWEEK_INVALID" });
         }
 
-        const previousGameweek = gameweeks.find(row => Number(row.gw_number) === 10);
-        if (!previousGameweek) return send(res, 404, { error: "GW10_NOT_FOUND" });
-
-        if (String(previousGameweek.status || "").toUpperCase() === "PENDING") {
-            return send(res, 409, {
-                error: "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED",
-                detail: "Confirm GW10 results first. Then regenerate and approve the GW11 fixtures using the updated survivor roster."
-            });
+        const previousGameweek = gameweeks.find(row => Number(row.gw_number) === currentGw - 1);
+        if (!previousGameweek) {
+            return send(res, 404, { error: "PREVIOUS_GAMEWEEK_NOT_FOUND", previous_gw: currentGw - 1 });
         }
         if (String(previousGameweek.status || "").toUpperCase() !== "COMPLETED") {
-            return send(res, 409, { error: "GW10_STATUS_NOT_READY" });
+            return send(res, 409, {
+                error: "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED",
+                previous_gw: currentGw - 1,
+                status: previousGameweek.status
+            });
         }
-
-        const roster = players.map(player => ({ ...player }));
 
         const existingForCurrent = allMatches.some(row => String(row.gameweek_id) === String(gameweek.id)) ||
             allByes.some(row => String(row.gameweek_id) === String(gameweek.id));
-        if (existingForCurrent) return send(res, 409, { error: "FIXTURES_ALREADY_EXIST" });
+        if (existingForCurrent) return send(res, 409, { error: "FIXTURES_ALREADY_EXIST", gameweek: currentGw });
 
         const previousMatches = allMatches.filter(match => {
             const matchGw = gameweeks.find(row => String(row.id) === String(match.gameweek_id));
-            return matchGw && Number(matchGw.gw_number) < 11;
+            return matchGw && Number(matchGw.gw_number) < currentGw;
         });
 
         const byePlayerId = body.bye_player_id === null || body.bye_player_id === undefined || body.bye_player_id === ""
@@ -111,7 +110,7 @@ module.exports = async function handler(req, res) {
             : String(body.bye_player_id);
 
         const generated = generateFixtures({
-            players: roster,
+            players,
             previousMatches,
             byePlayerId
         });
@@ -157,7 +156,7 @@ module.exports = async function handler(req, res) {
 
         return send(res, 200, {
             success: true,
-            gameweek: { id: gameweek.id, gw_number: gameweek.gw_number },
+            gameweek: { id: gameweek.id, gw_number: currentGw },
             saved: rpcData
         });
     } catch (error) {
@@ -167,17 +166,10 @@ module.exports = async function handler(req, res) {
             "NOT_ENOUGH_ACTIVE_PLAYERS", "BYE_PLAYER_SELECTION_REQUIRED",
             "BYE_PLAYER_NOT_ACTIVE", "BYE_NOT_REQUIRED",
             "ROSTER_TOO_LARGE", "REMATCH_FREE_SCHEDULE_IMPOSSIBLE",
-            "FIXTURE_RECONSTRUCTION_FAILED", "GAMEWEEK_NOT_PENDING",
-            "CHAPTER_RULESET_NOT_CONFIGURED", "FPL_GAMEWEEK_NOT_FINAL",
-            "MATCH_ALREADY_COMPLETED", "FIXTURE_ROSTER_INVALID",
-            "FIXTURE_COVERAGE_INCOMPLETE", "MULTIPLE_BYES_FOUND",
-            "NO_MATCHES_FOUND", "FPL_PLAYER_POINTS_UNAVAILABLE",
-            "PREVIEW_INPUT_INVALID"
+            "FIXTURE_RECONSTRUCTION_FAILED"
         ];
-        if (known.includes(message) || message.startsWith("UNRESOLVED_TIE:")) {
-            return send(res, 409, { error: message });
-        }
-        console.error("GW11 fixture save failed:", error);
+        if (known.includes(message)) return send(res, 409, { error: message });
+        console.error("Next gameweek fixture save failed:", error);
         return send(res, 500, { error: "FIXTURE_SAVE_FAILED" });
     }
 };
