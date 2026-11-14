@@ -1,6 +1,7 @@
 "use strict";
 
 const { generateFixtures } = require("../_lib/fixture-generator");
+const { selectNextFixtureGameweek } = require("../_lib/next-gameweek");
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
 const liveHandler = require("../live");
 const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
@@ -69,21 +70,7 @@ module.exports = async function handler(req, res) {
         const pendingGameweeks = gameweeks
             .filter(row => String(row.status || "").trim().toUpperCase() === "PENDING")
             .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
-
-        // Generate fixtures for the earliest pending gameweek that has no
-        // fixtures yet and directly follows the earliest unresolved round.
-        // This lets GW11 be previewed while GW10 is still pending, without
-        // accidentally skipping an unresolved gameweek.
-        const pendingGameweek = pendingGameweeks.find(row => {
-            const candidateGw = Number(row.gw_number);
-            const previous = gameweeks.find(item => Number(item.gw_number) === candidateGw - 1);
-            const hasFixtures = allMatches.some(match => String(match.gameweek_id) === String(row.id)) ||
-                allByes.some(bye => String(bye.gameweek_id) === String(row.id));
-            const earlierPending = pendingGameweeks.some(item => Number(item.gw_number) < candidateGw - 1);
-            return !hasFixtures && previous &&
-                ["PENDING", "COMPLETED"].includes(String(previous.status || "").toUpperCase()) &&
-                !earlierPending;
-        });
+        const pendingGameweek = selectNextFixtureGameweek(gameweeks, allMatches, allByes);
 
         if (!pendingGameweek) {
             return send(res, 409, {
