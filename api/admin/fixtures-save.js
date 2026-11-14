@@ -1,6 +1,6 @@
 "use strict";
 
-const { generateFixtures, pairKey } = require("../_lib/fixture-generator");
+const { generateFixtures, pairKey, filterPreviousMatchesToChapter } = require("../_lib/fixture-generator");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -100,10 +100,7 @@ module.exports = async function handler(req, res) {
             allByes.some(row => String(row.gameweek_id) === String(gameweek.id));
         if (existingForCurrent) return send(res, 409, { error: "FIXTURES_ALREADY_EXIST", gameweek: currentGw });
 
-        const previousMatches = allMatches.filter(match => {
-            const matchGw = gameweeks.find(row => String(row.id) === String(match.gameweek_id));
-            return matchGw && Number(matchGw.gw_number) < currentGw;
-        });
+        const previousMatches = filterPreviousMatchesToChapter(allMatches, gameweeks, gameweek);
 
         const byePlayerId = body.bye_player_id === null || body.bye_player_id === undefined || body.bye_player_id === ""
             ? null
@@ -166,7 +163,7 @@ module.exports = async function handler(req, res) {
             "NOT_ENOUGH_ACTIVE_PLAYERS", "BYE_PLAYER_SELECTION_REQUIRED",
             "BYE_PLAYER_NOT_ACTIVE", "BYE_NOT_REQUIRED",
             "ROSTER_TOO_LARGE", "REMATCH_FREE_SCHEDULE_IMPOSSIBLE",
-            "FIXTURE_RECONSTRUCTION_FAILED"
+            "FIXTURE_RECONSTRUCTION_FAILED", "CHAPTER_MATCH_HISTORY_INPUT_INVALID", "GAMEWEEK_CHAPTER_REQUIRED"
         ];
         if (known.includes(message)) return send(res, 409, { error: message });
         console.error("Next gameweek fixture save failed:", error);
