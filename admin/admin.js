@@ -457,7 +457,9 @@ async function setupConfirmResultsButton() {
         <p>${escapeHTML(result.confirmation.matches_completed)} matches completed · ${escapeHTML(result.confirmation.players_updated)} survivors updated · ${escapeHTML(result.confirmation.history_rows_created)} history records created.</p>
       `;
       showMessage("RESULTS CONFIRMED AND SAVED.", true);
-      await loadAdminData(accessToken);
+      await loadAdminData(accessToken).catch(error => {
+        showMessage(`RESULTS ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
+      });
     } catch (error) {
       button.disabled = false;
       button.textContent = "CONFIRM AND SAVE RESULTS";
@@ -510,7 +512,9 @@ async function setupSaveGw11FixturesButton() {
         <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
       showMessage(`GW${savedGameweek} FIXTURES SAVED.`, true);
-      await loadAdminData(accessToken);
+      await loadAdminData(accessToken).catch(error => {
+        showMessage(`GW${savedGameweek} FIXTURES ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
+      });
     } catch (error) {
       button.disabled = false;
       button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
