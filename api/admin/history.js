@@ -97,7 +97,16 @@ module.exports = async function handler(req, res) {
                     .map(row => ({
                         ...row,
                         player: playerById.get(String(row.player_id)) || null
-                    }))
+                    })),
+                data_quality: {
+                    matches_missing: !matches.some(match =>
+                        String(match.gameweek_id) === String(gameweek.id) &&
+                        String(match.status).toUpperCase() === "COMPLETED"
+                    ),
+                    survivor_history_missing: !history.some(row =>
+                        String(row.gameweek_id) === String(gameweek.id)
+                    )
+                }
             }));
 
         return send(res, 200, {
@@ -106,7 +115,9 @@ module.exports = async function handler(req, res) {
             totals: {
                 completed_gameweeks: completedGameweeks.length,
                 completed_matches: matches.filter(match => String(match.status).toUpperCase() === "COMPLETED").length,
-                history_rows: history.length
+                history_rows: history.length,
+                gameweeks_missing_matches: completedGameweeks.filter(gameweek => gameweek.data_quality.matches_missing).length,
+                gameweeks_missing_survivor_history: completedGameweeks.filter(gameweek => gameweek.data_quality.survivor_history_missing).length
             }
         });
     } catch (error) {
