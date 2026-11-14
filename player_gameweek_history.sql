@@ -23,12 +23,79 @@ create table if not exists public.player_gameweek_history (
         unique (gameweek_id, player_id)
 );
 
--- Older installations may have legacy status/hearts columns that are NOT NULL.
--- They are no longer written by the snapshot schema; keep them nullable so the
--- new before/after history inserts work on upgraded databases.
+-- Upgrade an existing legacy history table as well as creating a fresh one.
+-- Existing rows are retained; their new snapshot fields remain NULL because
+-- historical before/after values must never be guessed or fabricated.
 alter table public.player_gameweek_history
-    alter column status drop not null,
-    alter column hearts drop not null;
+    add column if not exists status_before text,
+    add column if not exists status_after text,
+    add column if not exists hearts_before integer,
+    add column if not exists hearts_after integer,
+    add column if not exists infected_before boolean,
+    add column if not exists infected_after boolean,
+    add column if not exists active_before boolean,
+    add column if not exists active_after boolean,
+    add column if not exists created_at timestamptz not null default now();
+
+-- Some older installations have legacy status/hearts columns that are NOT NULL.
+-- They are not part of new snapshot writes, so relax them only when present.
+do $
+begin
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'player_gameweek_history'
+          and column_name = 'status'
+    ) then
+        execute 'alter table public.player_gameweek_history alter column status drop not null';
+    end if;
+
+    if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'player_gameweek_history'
+          and column_name = 'hearts'
+    ) then
+        execute 'alter table public.player_gameweek_history alter column hearts drop not null';
+    end if;
+end
+$;
+
+-- Add the snapshot constraints on upgraded tables without duplicating
+-- constraints already created by the fresh-install table definition.
+do $
+begin
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'player_gameweek_history_status_before_check'
+          and conrelid = 'public.player_gameweek_history'::regclass
+    ) then
+        alter table public.player_gameweek_history
+            add constraint player_gameweek_history_status_before_check
+            check (status_before in ('SAFE', 'NORMAL', 'DANGER', 'ELIMINATED')) not valid;
+    end if;
+
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'player_gameweek_history_status_after_check'
+          and conrelid = 'public.player_gameweek_history'::regclass
+    ) then
+        alter table public.player_gameweek_history
+            add constraint player_gameweek_history_status_after_check
+            check (status_after in ('SAFE', 'NORMAL', 'DANGER', 'ELIMINATED')) not valid;
+    end if;
+
+    if not exists (
+        select 1 from pg_constraint
+        where conname = 'player_gameweek_history_unique_player_gw'
+          and conrelid = 'public.player_gameweek_history'::regclass
+    ) then
+        alter table public.player_gameweek_history
+            add constraint player_gameweek_history_unique_player_gw
+            unique (gameweek_id, player_id);
+    end if;
+end
+$;
 
 create index if not exists idx_player_gameweek_history_player
     on public.player_gameweek_history (player_id, gameweek_id);
