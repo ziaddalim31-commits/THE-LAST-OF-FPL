@@ -161,3 +161,55 @@ test("a bye survivor is included in history with unchanged state", () => {
     assert.equal(byeUpdate.is_infected, false);
     assert.equal(byeUpdate.is_active, true);
 });
+
+test("an infected NORMAL loser loses one heart and remains infected", () => {
+    const input = makeInput();
+    input.players[0] = { ...input.players[0], status: "NORMAL", hearts: 2, is_infected: true };
+    input.players[1] = { ...input.players[1], status: "SAFE", hearts: 3, is_infected: false };
+    input.live.players["1"].points = 40;
+    input.live.players["2"].points = 70;
+
+    const preview = buildGameweekPreview(input);
+    const loser = preview.player_updates.find(player => player.player_id === 1);
+
+    assert.equal(loser.status, "DANGER");
+    assert.equal(loser.hearts, 1);
+    assert.equal(loser.is_infected, true);
+    assert.equal(loser.is_active, true);
+});
+
+test("a DANGER infected loser loses at most one heart", () => {
+    const input = makeInput();
+    input.players[0] = { ...input.players[0], status: "DANGER", hearts: 1, is_infected: true };
+    input.live.players["1"].points = 40;
+    input.live.players["2"].points = 70;
+
+    const preview = buildGameweekPreview(input);
+    const loser = preview.player_updates.find(player => player.player_id === 1);
+
+    assert.equal(loser.hearts, 0);
+    assert.equal(loser.is_active, false);
+    assert.equal(loser.is_infected, true);
+});
+
+test("SAFE loss without infection moves to NORMAL without heart loss", () => {
+    const input = makeInput();
+    input.players[0] = { ...input.players[0], status: "SAFE", hearts: 2, is_infected: false };
+    input.players[1] = { ...input.players[1], status: "NORMAL", hearts: 2, is_infected: false };
+    input.live.players["1"].points = 40;
+    input.live.players["2"].points = 70;
+
+    const preview = buildGameweekPreview(input);
+    const loser = preview.player_updates.find(player => player.player_id === 1);
+
+    assert.equal(loser.status, "NORMAL");
+    assert.equal(loser.hearts, 2);
+    assert.equal(loser.is_infected, false);
+});
+
+test("Chapter II engine refuses gameweeks outside GW9–GW14", () => {
+    const input = makeInput();
+    input.gameweek = { ...input.gameweek, gw_number: 15, chapter: "Chapter III — The Forest" };
+
+    assert.throws(() => buildGameweekPreview(input), /CHAPTER_RULESET_NOT_CONFIGURED/);
+});
