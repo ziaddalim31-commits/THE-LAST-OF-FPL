@@ -464,13 +464,14 @@ async function setupSaveGw11FixturesButton() {
         throw new Error(result.detail || result.error || "FIXTURE_SAVE_FAILED");
       }
 
+      const savedGameweek = lastGw11FixturePreview.gameweek.gw_number;
       lastGw11FixturePreview = null;
       gw11FixturePanel.innerHTML = `
-        <h3>GW${escapeHTML(lastGw11FixturePreview.gameweek.gw_number)} — FIXTURES SAVED</h3>
+        <h3>GW${escapeHTML(savedGameweek)} — FIXTURES SAVED</h3>
         <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
         <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
-      showMessage(`GW${lastGw11FixturePreview.gameweek.gw_number} FIXTURES SAVED.`, true);
+      showMessage(`GW${savedGameweek} FIXTURES SAVED.`, true);
       await loadAdminData(accessToken);
     } catch (error) {
       button.disabled = false;
