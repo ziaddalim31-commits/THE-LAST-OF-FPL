@@ -66,53 +66,62 @@ module.exports = async function handler(req, res) {
             db("gameweek_byes?select=id,gameweek_id,player_id")
         ]);
 
-        const gw10 = gameweeks.find(row => Number(row.gw_number) === 10);
-        const gw11 = gameweeks.find(row => Number(row.gw_number) === 11);
-        if (!gw10) return send(res, 404, { error: "GW10_NOT_FOUND" });
-        if (!gw11) return send(res, 404, { error: "GW11_NOT_FOUND" });
-        if (String(gw11.status || "").toUpperCase() !== "PENDING") {
-            return send(res, 409, { error: "GW11_NOT_PENDING", detail: gw11.status });
+        const pendingGameweek = gameweeks
+            .filter(row => String(row.status || "").trim().toUpperCase() === "PENDING")
+            .sort((a, b) => Number(a.gw_number) - Number(b.gw_number))[0];
+        if (!pendingGameweek) return send(res, 404, { error: "PENDING_GAMEWEEK_NOT_FOUND" });
+
+        const currentGw = Number(pendingGameweek.gw_number);
+        if (!Number.isInteger(currentGw) || currentGw < 2 || currentGw > 38) {
+            return send(res, 409, { error: "CURRENT_GAMEWEEK_INVALID" });
         }
 
-        const matches10 = allMatches.filter(row => String(row.gameweek_id) === String(gw10.id));
-        const byes10 = allByes.filter(row => String(row.gameweek_id) === String(gw10.id));
-        const matches11 = allMatches.filter(row => String(row.gameweek_id) === String(gw11.id));
-        const byes11 = allByes.filter(row => String(row.gameweek_id) === String(gw11.id));
+        const previousGameweek = gameweeks.find(row => Number(row.gw_number) === currentGw - 1);
+        if (!previousGameweek) {
+            return send(res, 404, { error: "PREVIOUS_GAMEWEEK_NOT_FOUND", previous_gw: currentGw - 1 });
+        }
 
-        if (matches11.length || byes11.length) {
+        const matchesCurrent = allMatches.filter(row => String(row.gameweek_id) === String(pendingGameweek.id));
+        const byesCurrent = allByes.filter(row => String(row.gameweek_id) === String(pendingGameweek.id));
+        if (matchesCurrent.length || byesCurrent.length) {
             return send(res, 409, {
-                error: "GW11_FIXTURES_ALREADY_EXIST",
-                existing_matches: matches11.length,
-                existing_byes: byes11.length
+                error: "FIXTURES_ALREADY_EXIST",
+                gameweek: currentGw,
+                existing_matches: matchesCurrent.length,
+                existing_byes: byesCurrent.length
             });
         }
 
-        let rosterForGw11 = players.map(player => ({ ...player }));
-        let source = "GW10_ALREADY_COMPLETED";
+        let rosterForCurrent = players.map(player => ({ ...player }));
+        let source = "PREVIOUS_GAMEWEEK_ALREADY_COMPLETED";
 
-        if (String(gw10.status || "").toUpperCase() === "PENDING") {
-            if (!matches10.length) return send(res, 409, { error: "GW10_FIXTURES_MISSING" });
+        if (String(previousGameweek.status || "").toUpperCase() === "PENDING") {
+            const previousMatches = allMatches.filter(row => String(row.gameweek_id) === String(previousGameweek.id));
+            const previousByes = allByes.filter(row => String(row.gameweek_id) === String(previousGameweek.id));
+            if (!previousMatches.length) {
+                return send(res, 409, { error: "PREVIOUS_GAMEWEEK_FIXTURES_MISSING", previous_gw: currentGw - 1 });
+            }
 
-            const liveResult = await invokeLiveHandler(liveHandler, 10);
+            const liveResult = await invokeLiveHandler(liveHandler, currentGw - 1);
             const live = liveResult.payload;
             if (liveResult.statusCode < 200 || liveResult.statusCode >= 300 || live.ok !== true) {
                 return send(res, 503, {
-                    error: "GW10_FPL_DATA_UNAVAILABLE",
+                    error: "PREVIOUS_GAMEWEEK_FPL_DATA_UNAVAILABLE",
                     detail: live.detail || live.error || `LIVE_API_HTTP_${liveResult.statusCode}`
                 });
             }
 
-            const gw10Preview = buildGameweekPreview({
-                gameweek: gw10,
+            const previousPreview = buildGameweekPreview({
+                gameweek: previousGameweek,
                 players,
-                matches: matches10,
-                byes: byes10,
+                matches: previousMatches,
+                byes: previousByes,
                 live
             });
             const updates = new Map(
-                gw10Preview.player_updates.map(update => [String(update.player_id), update])
+                previousPreview.player_updates.map(update => [String(update.player_id), update])
             );
-            rosterForGw11 = rosterForGw11.map(player => {
+            rosterForCurrent = rosterForCurrent.map(player => {
                 const update = updates.get(String(player.id));
                 return update ? {
                     ...player,
@@ -122,14 +131,18 @@ module.exports = async function handler(req, res) {
                     is_active: update.is_active
                 } : player;
             });
-            source = "GW10_READ_ONLY_RESULTS_PREVIEW";
-        } else if (String(gw10.status || "").toUpperCase() !== "COMPLETED") {
-            return send(res, 409, { error: "GW10_STATUS_NOT_READY", detail: gw10.status });
+            source = `GW${currentGw - 1}_READ_ONLY_RESULTS_PREVIEW`;
+        } else if (String(previousGameweek.status || "").toUpperCase() !== "COMPLETED") {
+            return send(res, 409, {
+                error: "PREVIOUS_GAMEWEEK_STATUS_NOT_READY",
+                previous_gw: currentGw - 1,
+                status: previousGameweek.status
+            });
         }
 
         const historicalMatches = allMatches.filter(match => {
             const matchGameweek = gameweeks.find(row => String(row.id) === String(match.gameweek_id));
-            return matchGameweek && Number(matchGameweek.gw_number) < 11;
+            return matchGameweek && Number(matchGameweek.gw_number) < currentGw;
         });
 
         const byePlayerId = req.query && req.query.bye_player_id
@@ -137,27 +150,27 @@ module.exports = async function handler(req, res) {
             : null;
 
         const preview = generateFixtures({
-            players: rosterForGw11,
+            players: rosterForCurrent,
             previousMatches: historicalMatches,
             byePlayerId
         });
 
         return send(res, 200, {
             success: true,
-            gameweek: { id: gw11.id, gw_number: 11, chapter: gw11.chapter },
+            gameweek: { id: pendingGameweek.id, gw_number: currentGw, chapter: pendingGameweek.chapter },
             roster_source: source,
             previous_gameweek: {
-                gw_number: 10,
-                status: gw10.status,
-                simulated_in_memory: source === "GW10_READ_ONLY_RESULTS_PREVIEW"
+                gw_number: currentGw - 1,
+                status: previousGameweek.status,
+                simulated_in_memory: source === `GW${currentGw - 1}_READ_ONLY_RESULTS_PREVIEW`
             },
-            history_checked_through: 10,
+            history_checked_through: currentGw - 1,
             preview
         });
     } catch (error) {
         const message = String(error && error.message || "FIXTURE_PREVIEW_FAILED");
         if (message.startsWith("UNRESOLVED_TIE:")) {
-            return send(res, 409, { error: "GW10_TIE_UNRESOLVED", detail: message });
+            return send(res, 409, { error: "PREVIOUS_GAMEWEEK_TIE_UNRESOLVED", detail: message });
         }
         const known = [
             "PREVIEW_INPUT_INVALID", "GAMEWEEK_NOT_PENDING",
@@ -177,7 +190,7 @@ module.exports = async function handler(req, res) {
                 bye_candidates: error.bye_candidates || undefined
             });
         }
-        console.error("GW11 fixture preview failed:", error);
+        console.error("Next gameweek fixture preview failed:", error);
         return send(res, 500, { error: "FIXTURE_PREVIEW_FAILED" });
     }
 };
