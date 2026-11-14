@@ -18,6 +18,22 @@ function pairKey(a, b) {
     return [String(a), String(b)].sort().join("::");
 }
 
+function filterPreviousMatchesToChapter(matches, gameweeks, currentGameweek) {
+    if (!Array.isArray(matches) || !Array.isArray(gameweeks) || !currentGameweek) {
+        throw new Error("CHAPTER_MATCH_HISTORY_INPUT_INVALID");
+    }
+    const chapter = String(currentGameweek.chapter || "").trim().toUpperCase();
+    const currentGw = Number(currentGameweek.gw_number);
+    if (!chapter || !Number.isInteger(currentGw)) {
+        throw new Error("GAMEWEEK_CHAPTER_REQUIRED");
+    }
+    const sameChapterIds = new Set(gameweeks
+        .filter(row => String(row.chapter || "").trim().toUpperCase() === chapter &&
+            Number(row.gw_number) < currentGw)
+        .map(row => String(row.id)));
+    return matches.filter(match => sameChapterIds.has(String(match.gameweek_id)));
+}
+
 function getTier(a, b) {
     const x = String(a.status || "").toUpperCase();
     const y = String(b.status || "").toUpperCase();
@@ -207,4 +223,4 @@ function generateFixtures(input) {
     };
 }
 
-module.exports = { generateFixtures, pairKey };
+module.exports = { generateFixtures, pairKey, filterPreviousMatchesToChapter };
