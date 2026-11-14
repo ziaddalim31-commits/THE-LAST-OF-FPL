@@ -1,0 +1,32 @@
+name: Tournament automation tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - automation/gw-processing-preview
+
+jobs:
+  tournament-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run tournament engine tests
+        run: node --test test/*.test.js
+      - name: Syntax-check API files
+        run: |
+          node --check admin/admin.js
+          node --check api/live.js
+          node --check api/admin.js
+          node --check api/admin/preview.js
+          node --check api/_lib/tournament-engine.js
+          node --check api/_lib/fixture-generator.js
+          node --check api/admin/fixtures-preview.js
+          node --check api/admin/fixtures-save.js
+          node --check api/admin/confirm-results.js
+          node --check api/admin/history.js
+          node --check api/_lib/invoke-live-handler.js
