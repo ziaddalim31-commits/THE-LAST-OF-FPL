@@ -1,6 +1,6 @@
 "use strict";
 
-const { generateFixtures } = require("../_lib/fixture-generator");
+const { generateFixtures, filterPreviousMatchesToChapter } = require("../_lib/fixture-generator");
 const { selectNextFixtureGameweek } = require("../_lib/next-gameweek");
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
 const liveHandler = require("../live");
@@ -144,10 +144,7 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const historicalMatches = allMatches.filter(match => {
-            const matchGameweek = gameweeks.find(row => String(row.id) === String(match.gameweek_id));
-            return matchGameweek && Number(matchGameweek.gw_number) < currentGw;
-        });
+        const historicalMatches = filterPreviousMatchesToChapter(allMatches, gameweeks, pendingGameweek);
 
         const byePlayerId = req.query && req.query.bye_player_id
             ? String(req.query.bye_player_id)
@@ -186,7 +183,7 @@ module.exports = async function handler(req, res) {
             "NOT_ENOUGH_ACTIVE_PLAYERS", "BYE_PLAYER_SELECTION_REQUIRED",
             "BYE_PLAYER_NOT_ACTIVE", "BYE_NOT_REQUIRED",
             "ROSTER_TOO_LARGE", "REMATCH_FREE_SCHEDULE_IMPOSSIBLE",
-            "FIXTURE_RECONSTRUCTION_FAILED"
+            "FIXTURE_RECONSTRUCTION_FAILED", "CHAPTER_MATCH_HISTORY_INPUT_INVALID", "GAMEWEEK_CHAPTER_REQUIRED"
         ];
         if (known.includes(message)) {
             return send(res, 409, {
