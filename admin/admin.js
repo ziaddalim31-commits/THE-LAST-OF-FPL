@@ -483,6 +483,7 @@ async function setupSaveGw11FixturesButton() {
 
     button.disabled = true;
     button.textContent = "SAVING APPROVED FIXTURES...";
+    const targetGameweek = lastGw11FixturePreview.gameweek.gw_number;
     const preview = lastGw11FixturePreview.preview;
     try {
       const response = await fetch("/api/admin/fixtures-save", {
@@ -501,7 +502,7 @@ async function setupSaveGw11FixturesButton() {
         throw new Error(result.detail || result.error || "FIXTURE_SAVE_FAILED");
       }
 
-      const savedGameweek = lastGw11FixturePreview.gameweek.gw_number;
+      const savedGameweek = targetGameweek;
       lastGw11FixturePreview = null;
       gw11FixturePanel.innerHTML = `
         <h3>GW${escapeHTML(savedGameweek)} — FIXTURES SAVED</h3>
@@ -512,7 +513,7 @@ async function setupSaveGw11FixturesButton() {
       await loadAdminData(accessToken);
     } catch (error) {
       button.disabled = false;
-      button.textContent = `SAVE APPROVED GW${lastGw11FixturePreview.gameweek.gw_number} FIXTURES`;
+      button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
       showMessage(`FIXTURES NOT SAVED: ${error.message}`);
     }
   });
