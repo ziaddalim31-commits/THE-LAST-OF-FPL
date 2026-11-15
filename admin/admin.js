@@ -18,6 +18,7 @@ const message = document.getElementById("message");
 const adminEmail = document.getElementById("admin-email");
 
 const adminData = document.getElementById("admin-data");
+let initialResultsPreviewAttempted = false;
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -96,6 +97,11 @@ async function verifyAdmin() {
 showDashboard(sessionData.session.user);
 
 await loadAdminData(sessionData.session.access_token);
+
+if (!initialResultsPreviewAttempted) {
+  initialResultsPreviewAttempted = true;
+  await loadInitialResultsPreview(sessionData.session.access_token);
+}
 
 return true;
 }
@@ -207,6 +213,40 @@ function renderGameweekPreview(preview, previewToken) {
     <p><strong>PREVIEW ONLY — no tournament data has been changed.</strong></p>
     <button id="confirm-results-button" type="button" ${lastPreviewToken ? "" : "disabled"}>CONFIRM AND SAVE RESULTS</button>
   `;
+}
+
+async function loadInitialResultsPreview(accessToken) {
+  if (!previewButton || !previewPanel || !accessToken) return;
+
+  previewButton.disabled = true;
+  previewButton.textContent = "AUTOMATICALLY CHECKING FPL...";
+  previewPanel.textContent = "Checking whether the current gameweek is final and preparing a read-only results preview...";
+
+  try {
+    const response = await fetch("/api/admin/preview", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      const detail = typeof result.detail === "string"
+        ? result.detail
+        : result.detail && typeof result.detail === "object"
+          ? JSON.stringify(result.detail)
+          : "";
+      throw new Error(detail || result.error || "AUTOMATIC_PREVIEW_NOT_READY");
+    }
+
+    renderGameweekPreview(result.preview, result.preview_token);
+    setupConfirmResultsButton();
+    showMessage("AUTOMATIC CHECK COMPLETE — RESULTS ARE READY FOR YOUR REVIEW.", true);
+  } catch (error) {
+    previewPanel.textContent = `AUTOMATIC CHECK: ${error.message}. You can retry with the Generate Results Preview button. No database changes were made.`;
+  } finally {
+    previewButton.disabled = false;
+    previewButton.textContent = "GENERATE RESULTS PREVIEW";
+  }
 }
 
 if (previewButton) {
@@ -460,6 +500,12 @@ async function setupConfirmResultsButton() {
       await loadAdminData(accessToken).catch(error => {
         showMessage(`RESULTS ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
       });
+
+      try {
+        await requestNextGameweekFixturePreview(accessToken);
+      } catch (error) {
+        gw11FixturePanel.textContent = `RESULTS WERE SAVED. NEXT FIXTURE PREVIEW IS NOT READY YET: ${error.message}`;
+      }
     } catch (error) {
       button.disabled = false;
       button.textContent = "CONFIRM AND SAVE RESULTS";
