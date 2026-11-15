@@ -70,6 +70,21 @@ test("rejects survivor state changes that do not carry into the next round", () 
     assert.equal(result.player_id, "1");
 });
 
+test("allows infection initialization at a chapter boundary but preserves same-chapter continuity", () => {
+    const data = fixtureData();
+    data.gameweeks[0].chapter = "CHAPTER I";
+    data.gameweeks[1].chapter = "CHAPTER II";
+    data.gameweeks[2].chapter = "CHAPTER II";
+    const gw9Player1 = data.history.find(row => row.gameweek_id === 9 && row.player_id === 1);
+    const gw10Player1 = data.history.find(row => row.gameweek_id === 10 && row.player_id === 1);
+    gw9Player1.infected_before = true;
+    gw9Player1.infected_after = true;
+    gw10Player1.infected_before = true;
+    gw10Player1.infected_after = true;
+    const result = auditCompletedHistory({ ...data, throughGameweek: 10 });
+    assert.equal(result.ok, true);
+});
+
 test("rejects a completed round with an uncompleted match", () => {
     const data = fixtureData();
     data.matches[2].status = "PENDING";
