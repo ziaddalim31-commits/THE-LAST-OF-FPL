@@ -213,3 +213,18 @@ test("Chapter II engine refuses gameweeks outside GW9–GW14", () => {
 
     assert.throws(() => buildGameweekPreview(input), /CHAPTER_RULESET_NOT_CONFIGURED/);
 });
+
+
+test("unknown player status blocks the preview instead of silently becoming NORMAL", () => {
+    const input = makeInput();
+    input.players[0].status = "UNKNOWN";
+
+    assert.throws(() => buildGameweekPreview(input), /PLAYER_STATUS_INVALID/);
+});
+
+test("missing player status blocks the preview instead of silently becoming NORMAL", () => {
+    const input = makeInput();
+    delete input.players[0].status;
+
+    assert.throws(() => buildGameweekPreview(input), /PLAYER_STATUS_INVALID/);
+});
