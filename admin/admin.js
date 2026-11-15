@@ -622,8 +622,8 @@ function renderRoundHistory(data) {
 
   panel.innerHTML = `
     <p><strong>${data.totals.completed_gameweeks} completed gameweeks · ${data.totals.completed_matches} matches · ${data.totals.history_rows} survivor history records</strong></p>
-    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history
-      ? `<p class="workflow-warning">DATA GAPS: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no stored match results; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots. Historical values are not fabricated.</p>`
+    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history || data.totals.gameweeks_integrity_failed
+      ? `<p class="workflow-warning">DATA INTEGRITY WARNING: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no match rows; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots; ${data.totals.gameweeks_integrity_failed || 0} fail the full history audit. Fixture generation is blocked when required history is incomplete.</p>`
       : ""}
     ${data.gameweeks.map(gameweek => {
       const matchRows = gameweek.matches.length
@@ -653,6 +653,9 @@ function renderRoundHistory(data) {
         <article class="history-round">
           <h3>GW${escapeHTML(gameweek.gw_number)} — ${escapeHTML(gameweek.chapter)}</h3>
           <p class="workflow-note">BYE: ${byeNames}</p>
+          ${gameweek.data_quality && !gameweek.data_quality.integrity_ok
+            ? `<p class="workflow-warning">HISTORY AUDIT FAILED: ${escapeHTML(gameweek.data_quality.integrity_error && gameweek.data_quality.integrity_error.code || "UNKNOWN")}. Review missing or inconsistent records before generating fixtures.</p>`
+            : `<p class="workflow-note">HISTORY AUDIT: ${gameweek.data_quality && gameweek.data_quality.integrity_ok ? "PASSED" : "NOT VERIFIED"}</p>`}
           <h4>Match Results</h4>
           <div class="table-scroll"><table><thead><tr><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th></tr></thead><tbody>${matchRows}</tbody></table></div>
           <h4>Survivor Changes</h4>
