@@ -281,7 +281,7 @@ function renderGw11FixturePreview(result) {
 
   gw11FixturePanel.innerHTML = `
     <h3>GW${escapeHTML(result.gameweek.gw_number)} — FIXTURE PREVIEW</h3>
-    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through} · Verified completed history through GW${result.history_integrity_checked_through} (${result.history_integrity.rounds_checked} rounds)</p>
+    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through} · Verified chapter opponent history through GW${result.history_integrity_checked_through} (${result.opponent_history_integrity.rounds_checked} rounds)</p>
     <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
     <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER} · INFECTED: ${preview.infected_count}</p>
     ${preview.infected_count ? `<p><strong>INFECTED SURVIVORS:</strong> ${preview.infected_players.map(player => escapeHTML(player.name)).join(", ")}</p>` : ""}
@@ -622,8 +622,8 @@ function renderRoundHistory(data) {
 
   panel.innerHTML = `
     <p><strong>${data.totals.completed_gameweeks} completed gameweeks · ${data.totals.completed_matches} matches · ${data.totals.history_rows} survivor history records</strong></p>
-    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history || data.totals.gameweeks_integrity_failed
-      ? `<p class="workflow-warning">DATA INTEGRITY WARNING: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no match rows; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots; ${data.totals.gameweeks_integrity_failed || 0} fail the full history audit. Fixture generation is blocked when required history is incomplete.</p>`
+    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history || data.totals.gameweeks_opponent_history_failed || data.totals.gameweeks_snapshot_integrity_failed
+      ? `<p class="workflow-warning">DATA INTEGRITY WARNING: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no match rows; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots; ${data.totals.gameweeks_opponent_history_failed || 0} fail the chapter opponent-history audit; ${data.totals.gameweeks_snapshot_integrity_failed || 0} have incomplete snapshot coverage. Snapshot gaps are diagnostic only and do not block rematch checks.</p>`
       : ""}
     ${data.gameweeks.map(gameweek => {
       const matchRows = gameweek.matches.length
@@ -653,9 +653,12 @@ function renderRoundHistory(data) {
         <article class="history-round">
           <h3>GW${escapeHTML(gameweek.gw_number)} — ${escapeHTML(gameweek.chapter)}</h3>
           <p class="workflow-note">BYE: ${byeNames}</p>
-          ${gameweek.data_quality && !gameweek.data_quality.integrity_ok
-            ? `<p class="workflow-warning">HISTORY AUDIT FAILED: ${escapeHTML(gameweek.data_quality.integrity_error && gameweek.data_quality.integrity_error.code || "UNKNOWN")}. Review missing or inconsistent records before generating fixtures.</p>`
-            : `<p class="workflow-note">HISTORY AUDIT: ${gameweek.data_quality && gameweek.data_quality.integrity_ok ? "PASSED" : "NOT VERIFIED"}</p>`}
+          ${gameweek.data_quality && !gameweek.data_quality.opponent_history_ok
+            ? `<p class="workflow-warning">OPPONENT HISTORY AUDIT FAILED: ${escapeHTML(gameweek.data_quality.opponent_history_error && gameweek.data_quality.opponent_history_error.code || "UNKNOWN")}.</p>`
+            : `<p class="workflow-note">CHAPTER OPPONENT HISTORY: ${gameweek.data_quality && gameweek.data_quality.opponent_history_ok ? "VERIFIED" : "NOT VERIFIED"}</p>`}
+          ${gameweek.data_quality && !gameweek.data_quality.snapshot_integrity_ok
+            ? `<p class="workflow-warning">SURVIVOR SNAPSHOTS: ${escapeHTML(gameweek.data_quality.snapshot_integrity_error && gameweek.data_quality.snapshot_integrity_error.code || "INCOMPLETE")} — diagnostic only; not used to determine previous opponents.</p>`
+            : `<p class="workflow-note">SURVIVOR SNAPSHOTS: ${gameweek.data_quality && gameweek.data_quality.snapshot_integrity_ok ? "COMPLETE" : "NOT VERIFIED"}</p>`}
           <h4>Match Results</h4>
           <div class="table-scroll"><table><thead><tr><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th></tr></thead><tbody>${matchRows}</tbody></table></div>
           <h4>Survivor Changes</h4>
