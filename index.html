@@ -12,7 +12,7 @@
     <link rel="preload" as="image" href="assets/illustrations/hero-endure-city.jpg">
     <link rel="preload" as="image" href="assets/illustrations/chapter-2-the-infection.jpg">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="chapter2.css">
+    <link rel="stylesheet" href="chapter2.css">\n    <link rel="stylesheet" href="dashboard.css">
     <link rel="stylesheet" href="cinematic-intro.css">
 
     <!-- Vercel Web Analytics (static HTML) -->
@@ -92,114 +92,52 @@
 
     <!-- PAGE 1: HOME -->
     <main id="page-home" class="tab-page active">
-        <section class="hero-section">
-            <div class="container text-center hero-container">
-                <div class="outbreak-banner c2-advisory" role="note">
-                    <span class="dot-pulse" aria-hidden="true"></span>
-                    <span class="c2-advisory-text">BIOHAZARD ADVISORY — CHAPTER II INITIATED</span>
-                    <span class="c2-advisory-code" aria-hidden="true">SECTOR 02 // GW9–14</span>
+    <section class="dash-hero" aria-labelledby="dashboardTitle">
+        <div class="dash-shell">
+            <div class="dash-topline"><span class="dash-eyebrow"><i></i> EMPERORES KINGDOM FANTASY // SURVIVAL NETWORK</span><span class="dash-registry" id="homeRegistryStatus">REGISTRY // CONNECTING</span></div>
+            <div class="dash-hero-grid">
+                <div class="dash-hero-copy">
+                    <p class="dash-chapter">CHAPTER II <span>/</span> THE INFECTION</p>
+                    <h1 id="dashboardTitle">SURVIVAL<br><em>IS NOT</em> <strong>GUARANTEED.</strong></h1>
+                    <p class="dash-intro">The quarantine has fallen. Every fixture can change a survivor’s fate. Follow the standings, track the infected, and see who makes it through the next gameweek.</p>
+                    <div class="dash-actions"><button class="dash-btn dash-btn-primary" type="button" onclick="switchTab('leaderboard')">VIEW SURVIVORS <span>↗</span></button><button class="dash-btn dash-btn-ghost" type="button" onclick="switchTab('matchups')">MATCH CENTER <span>→</span></button><button class="dash-btn dash-btn-ghost" type="button" onclick="switchTab('chapters')">EXPLORE CHAPTERS <span>→</span></button></div>
+                    <div class="dash-hero-foot"><span class="dash-pulse"></span> FIELD REPORT // CHAPTER II ACTIVE <b>GW09—GW14</b></div>
                 </div>
-
-                <div class="hero-layout">
-                    <div class="hero-main">
-                        <span class="hero-chapter-tag">CHAPTER II // ACTIVE SECTOR</span>
-                        <h1 class="main-title"><span class="title-line">THE</span><span class="green-glow">INFECTION</span></h1>
-                        <p class="hero-lead">
-                            The quarantine is breached. The infection has reached the field — every heart lost from here brings a survivor closer to permanent elimination. Track the outbreak across GW9–GW14.
-                        </p>
-
-                        <div class="cta-actions">
-                            <button class="btn btn-main" onclick="switchTab('chapters')">ENTER CHAPTER II</button>
-                            <button class="btn btn-outline" onclick="switchTab('leaderboard')">VIEW STANDINGS</button>
-                            <button class="btn btn-outline" onclick="switchTab('matchups')">EXPLORE MATCHUPS</button>
-                        </div>
-                    </div>
-
-                    <aside class="hero-side" aria-label="Chapter II sector status">
-                        <div class="sector-panel">
-                            <div class="sector-head">
-                                <span class="c2-label">Sector Status</span>
-                                <span class="sector-feed">FIELD BRIEF</span>
-                            </div>
-                            <dl class="sector-rows">
-                                <div class="sector-row">
-                                    <dt>Threat</dt>
-                                    <dd class="is-warning">HIGH</dd>
-                                </div>
-                                <div class="sector-row">
-                                    <dt>Infected</dt>
-                                    <dd id="sectorInfected">&mdash;</dd>
-                                </div>
-                                <div class="sector-row">
-                                    <dt>Hearts</dt>
-                                    <dd id="sectorHearts">&mdash;</dd>
-                                </div>
-                                <div class="sector-row">
-                                    <dt>Active Phase</dt>
-                                    <dd>GW9–GW14</dd>
-                                </div>
-                            </dl>
-                            <div class="sector-foot">
-                                <span>Provisional figures</span>
-                                <span>Sector 02</span>
-                            </div>
-                        </div>
-
-                        <figure class="hero-logo-plate">
-                            <div class="hero-logo-frame">
-                               <img src="assets/illustrations/tournament%20groupe%20logo.jpg" alt="Official THE LAST OF FPL tournament logo" width="640" height="640" decoding="async">
-                            </div>
-                            <figcaption>Official Tournament Key Art</figcaption>
-                        </figure>
-                    </aside>
-                </div>
-
-                <div class="hero-ledger-wrap">
-                    <div class="ledger-head">
-                        <span class="c2-label">Status Ledger</span>
-                        <span class="ledger-meta">Registry sync</span>
-                    </div>
-                    <div class="stats-hub hero-ledger">
-                        <div class="stat-card safe-border">
-                            <span class="stat-num" data-stat="safe">&mdash;</span>
-                            <span class="stat-lbl">SAFE <span class="stat-pct" data-stat-pct="safe">(&mdash;%)</span></span>
-                        </div>
-                        <div class="stat-card normal-border">
-                            <span class="stat-num" data-stat="normal">&mdash;</span>
-                            <span class="stat-lbl">NORMAL <span class="stat-pct" data-stat-pct="normal">(&mdash;%)</span></span>
-                        </div>
-                        <div class="stat-card danger-border">
-                            <span class="stat-num" data-stat="danger">&mdash;</span>
-                            <span class="stat-lbl">DANGER <span class="stat-pct" data-stat-pct="danger">(&mdash;%)</span></span>
-                        </div>
-                        <div class="stat-card elim-border">
-                            <span class="stat-num" data-stat="eliminated">&mdash;</span>
-                            <span class="stat-lbl">ELIMINATED</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hero-telemetry" aria-hidden="true">
-                    <div class="telemetry-cell">
-                        <span class="telemetry-key">Sector</span>
-                        <span class="telemetry-val">Sector 02 — Infection</span>
-                    </div>
-                    <div class="telemetry-cell">
-                        <span class="telemetry-key">Phase</span>
-                        <span class="telemetry-val">GW9 – GW14</span>
-                    </div>
-                    <div class="telemetry-cell">
-                        <span class="telemetry-key">Survivors</span>
-                        <span class="telemetry-val"><span data-stat="active">&mdash;</span> Active</span>
-                    </div>
-                    <div class="telemetry-cell telemetry-signal">
-                        <span class="telemetry-key">Signal</span>
-                        <span class="telemetry-val"><span class="signal-dot"></span>Degraded</span>
-                    </div>
-                </div>
+                <aside class="dash-hero-art" aria-label="Tournament insignia"><div class="dash-art-frame"><img src="assets/illustrations/tournament%20groupe%20logo.jpg" alt="THE LAST OF FPL — EMPERORES KINGDOM FANTASY official insignia" width="640" height="640"></div><span class="dash-art-index">EKF / FIELD DIVISION / 02</span></aside>
             </div>
-        </section>
-    </main>
+            <div class="dash-bottom-line"><span>NO ONE SURVIVES ALONE</span><span>THE LAST OF FPL <b>●</b> OFFICIAL TOURNAMENT PORTAL</span></div>
+        </div>
+    </section>
+    <section class="dash-section dash-shell" aria-label="Tournament status">
+        <div class="dash-section-heading"><div><span class="dash-kicker">01 // SURVIVOR REGISTRY</span><h2>THE STATE OF <em>THE FIELD</em></h2></div><p>Verified tournament records<br>Updated from the registry</p></div>
+        <div class="dash-metrics">
+            <article class="dash-metric dash-metric-featured"><span class="dash-metric-label">ACTIVE SURVIVORS</span><strong data-stat="active">—</strong><small>STILL IN THE FIGHT</small></article>
+            <article class="dash-metric metric-safe"><span class="dash-metric-label">SAFE</span><strong data-stat="safe">—</strong><small data-stat-pct="safe">(—%)</small></article>
+            <article class="dash-metric metric-normal"><span class="dash-metric-label">NORMAL</span><strong data-stat="normal">—</strong><small data-stat-pct="normal">(—%)</small></article>
+            <article class="dash-metric metric-danger"><span class="dash-metric-label">DANGER</span><strong data-stat="danger">—</strong><small data-stat-pct="danger">(—%)</small></article>
+            <article class="dash-metric metric-infected"><span class="dash-metric-label">INFECTED</span><strong data-stat="infected">—</strong><small>CONFIRMED CASES</small></article>
+            <article class="dash-metric metric-eliminated"><span class="dash-metric-label">ELIMINATED</span><strong data-stat="eliminated">—</strong><small>NO LONGER ACTIVE</small></article>
+        </div>
+        <div class="dash-heart-strip"><span class="dash-heart-icon">♥</span><span>TOTAL REMAINING HEARTS</span><strong id="sectorHearts">—</strong><small>ACROSS THE SURVIVOR REGISTRY</small></div>
+    </section>
+    <section class="dash-operations dash-shell" aria-label="Current gameweek operations">
+        <div class="dash-section-heading"><div><span class="dash-kicker">02 // FIELD OPERATIONS</span><h2>CURRENT <em>GAMEWEEK</em></h2></div><button class="dash-text-link" type="button" onclick="switchTab('matchups')">OPEN MATCH CENTER ↗</button></div>
+        <div class="dash-ops-grid">
+            <article class="dash-ops-main"><div class="dash-ops-top"><span>ACTIVE FIXTURE CYCLE</span><span class="dash-status-chip" id="homeGwStatus">CHECKING</span></div><strong class="dash-gw-number" id="homeGwNumber">GW—</strong><p id="homeGwChapter">Awaiting verified gameweek data from the registry.</p><div class="dash-fixture-counts"><div><strong id="homeFixtureTotal">—</strong><span>TOTAL FIXTURES</span></div><div><strong id="homeFixtureCompleted">—</strong><span>COMPLETED</span></div><div><strong id="homeFixturePending">—</strong><span>PENDING</span></div></div></article>
+            <article class="dash-bye-card"><span class="dash-kicker">RESTING THIS ROUND</span><div class="dash-bye-symbol">Ⅱ</div><strong id="homeByeName">BYE NOT CONFIRMED</strong><p id="homeByeNote">The official bye record will appear here when available.</p></article>
+        </div>
+    </section>
+    <section class="dash-featured dash-shell" aria-label="Featured survivor">
+        <div class="dash-section-heading"><div><span class="dash-kicker">03 // FIELD INTELLIGENCE</span><h2>SURVIVOR <em>IN FOCUS</em></h2></div><button class="dash-text-link" type="button" onclick="switchTab('leaderboard')">FULL STANDINGS ↗</button></div>
+        <article class="dash-survivor-card"><div class="dash-survivor-mark" aria-hidden="true">SURVIVOR<br><b>FILE 001</b></div><div class="dash-survivor-copy"><span id="homeFeaturedState" class="dash-survivor-state">REGISTRY PENDING</span><h3 id="homeFeaturedName">Awaiting survivor data</h3><p id="homeFeaturedMeta">The featured survivor is selected from the verified standings.</p></div><div class="dash-survivor-stats"><div><strong id="homeFeaturedHearts">—</strong><span>HEARTS</span></div><div><strong id="homeFeaturedPoints">—</strong><span id="homeFeaturedPointsLabel">LATEST PTS</span></div></div></article>
+    </section>
+    <section class="dash-access dash-shell" aria-label="Explore tournament"><div class="dash-section-heading"><div><span class="dash-kicker">04 // EXPLORE THE NETWORK</span><h2>CHOOSE YOUR <em>PATH</em></h2></div></div><div class="dash-access-grid">
+        <button type="button" onclick="switchTab('chapters')"><span>01</span><strong>CHAPTERS</strong><small>THE SURVIVAL JOURNEY</small><b>↗</b></button>
+        <button type="button" onclick="switchTab('infected')"><span>02</span><strong>INFECTED</strong><small>CONFIRMED CASE FILES</small><b>↗</b></button>
+        <button type="button" onclick="switchTab('community')"><span>03</span><strong>COMMUNITY</strong><small>THE SURVIVOR NETWORK</small><b>↗</b></button>
+        <button type="button" onclick="switchTab('rules')"><span>04</span><strong>RULES & LORE</strong><small>KNOW THE RULES</small><b>↗</b></button>
+    </div></section>
+</main>
 
     <!-- PAGE 2: CHAPTERS ROADMAP -->
     <main id="page-chapters" class="tab-page">
