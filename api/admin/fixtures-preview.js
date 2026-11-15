@@ -2,7 +2,7 @@
 
 const { generateFixtures, filterPreviousMatchesToChapter } = require("../_lib/fixture-generator");
 const { selectNextFixtureGameweek } = require("../_lib/next-gameweek");
-const { auditCompletedHistory } = require("../_lib/history-integrity");
+const { auditChapterMatchHistory } = require("../_lib/chapter-history");
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
 const liveHandler = require("../live");
 const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
@@ -61,12 +61,11 @@ module.exports = async function handler(req, res) {
     try {
         if (!await requireAdmin(token)) return send(res, 403, { error: "ACCESS_DENIED" });
 
-        const [players, gameweeks, allMatches, allByes, history] = await Promise.all([
+        const [players, gameweeks, allMatches, allByes] = await Promise.all([
             db("players?select=id,name,status,hearts,is_infected,is_active&order=id.asc"),
             db("gameweeks?select=id,gw_number,chapter,status&order=gw_number.asc"),
             db("matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,winner_method,status&order=id.asc"),
-            db("gameweek_byes?select=id,gameweek_id,player_id"),
-            db("player_gameweek_history?select=gameweek_id,player_id,status_before,status_after,hearts_before,hearts_after,infected_before,infected_after,active_before,active_after&order=gameweek_id.asc,player_id.asc")
+            db("gameweek_byes?select=id,gameweek_id,player_id")
         ]);
 
         const pendingGameweeks = gameweeks
@@ -107,18 +106,17 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // Pending previous-round fixtures are checked by buildGameweekPreview below.
+        // Snapshot history is archival diagnostics, not the source of opponent pairs.
         const integrityThrough = previousStatus === "PENDING" ? currentGw - 2 : currentGw - 1;
-        const historyAudit = auditCompletedHistory({
-            gameweeks,
-            matches: allMatches,
-            byes: allByes,
-            history,
-            throughGameweek: integrityThrough
+        const historyAudit = auditChapterMatchHistory({
+            gameweeks, matches: allMatches, byes: allByes, players,
+            currentGameweek: pendingGameweek,
+            throughGameweek: integrityThrough,
+            requiredPlayerIds: players.filter(player => player.is_active !== false && Number(player.hearts) > 0).map(player => player.id)
         });
         if (!historyAudit.ok) {
             return send(res, 409, {
-                error: "HISTORY_INTEGRITY_FAILED",
+                error: "CHAPTER_OPPONENT_HISTORY_FAILED",
                 detail: `${historyAudit.code} at GW${historyAudit.gameweek || integrityThrough}. No fixture preview was generated.`,
                 audit: historyAudit
             });
@@ -195,7 +193,7 @@ module.exports = async function handler(req, res) {
             },
             history_checked_through: currentGw - 1,
             history_integrity_checked_through: historyAudit.checked_through,
-            history_integrity: historyAudit,
+            opponent_history_integrity: historyAudit,
             preview
         });
     } catch (error) {
