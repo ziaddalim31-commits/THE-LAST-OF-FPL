@@ -281,7 +281,7 @@ function renderGw11FixturePreview(result) {
 
   gw11FixturePanel.innerHTML = `
     <h3>GW${escapeHTML(result.gameweek.gw_number)} — FIXTURE PREVIEW</h3>
-    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through}</p>
+    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through} · Verified completed history through GW${result.history_integrity_checked_through} (${result.history_integrity.rounds_checked} rounds)</p>
     <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
     <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER} · INFECTED: ${preview.infected_count}</p>
     ${preview.infected_count ? `<p><strong>INFECTED SURVIVORS:</strong> ${preview.infected_players.map(player => escapeHTML(player.name)).join(", ")}</p>` : ""}
