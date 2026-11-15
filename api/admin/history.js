@@ -1,5 +1,7 @@
 "use strict";
 
+const { auditCompletedHistory } = require("../_lib/history-integrity");
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -98,15 +100,25 @@ module.exports = async function handler(req, res) {
                         ...row,
                         player: playerById.get(String(row.player_id)) || null
                     })),
-                data_quality: {
-                    matches_missing: !matches.some(match =>
-                        String(match.gameweek_id) === String(gameweek.id) &&
-                        String(match.status).toUpperCase() === "COMPLETED"
-                    ),
-                    survivor_history_missing: !history.some(row =>
-                        String(row.gameweek_id) === String(gameweek.id)
-                    )
-                }
+                data_quality: (() => {
+                    const audit = auditCompletedHistory({
+                        gameweeks,
+                        matches,
+                        byes,
+                        history,
+                        throughGameweek: Number(gameweek.gw_number)
+                    });
+                    return {
+                        matches_missing: !matches.some(match =>
+                            String(match.gameweek_id) === String(gameweek.id)
+                        ),
+                        survivor_history_missing: !history.some(row =>
+                            String(row.gameweek_id) === String(gameweek.id)
+                        ),
+                        integrity_ok: audit.ok,
+                        integrity_error: audit.ok ? null : audit
+                    };
+                })()
             }));
 
         return send(res, 200, {
@@ -117,7 +129,8 @@ module.exports = async function handler(req, res) {
                 completed_matches: matches.filter(match => String(match.status).toUpperCase() === "COMPLETED").length,
                 history_rows: history.length,
                 gameweeks_missing_matches: completedGameweeks.filter(gameweek => gameweek.data_quality.matches_missing).length,
-                gameweeks_missing_survivor_history: completedGameweeks.filter(gameweek => gameweek.data_quality.survivor_history_missing).length
+                gameweeks_missing_survivor_history: completedGameweeks.filter(gameweek => gameweek.data_quality.survivor_history_missing).length,
+                gameweeks_integrity_failed: completedGameweeks.filter(gameweek => !gameweek.data_quality.integrity_ok).length
             }
         });
     } catch (error) {
