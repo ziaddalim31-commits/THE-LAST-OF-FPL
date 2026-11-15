@@ -24,6 +24,7 @@
     intro.addEventListener("animationend", event => {
         if (event.target === intro && intro.classList.contains("is-leaving")) {
             intro.remove();
+            document.querySelector(".nav-btn")?.focus();
         }
     });
 
@@ -39,5 +40,6 @@
         intro.remove();
     } else {
         document.body.classList.add("intro-pending");
+        intro.querySelector(".cinematic-enter-btn")?.focus({ preventScroll: true });
     }
 })();
