@@ -123,7 +123,7 @@ module.exports = async function handler(req, res) {
         if (!historyAudit.ok) {
             return send(res, 409, {
                 error: "HISTORY_INTEGRITY_FAILED",
-                detail: "Completed round history is incomplete or inconsistent. Fixtures were not saved.",
+                detail: `${historyAudit.code} at GW${historyAudit.gameweek || currentGw - 1}. Fixtures were not saved.`,
                 audit: historyAudit
             });
         }
