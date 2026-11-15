@@ -84,3 +84,30 @@ test("detects per-round snapshot coverage mismatch without failing opponent audi
     assert.deepEqual(snapshot.missing_snapshot_player_ids, ["4"]);
     assert.equal(audit(input).ok, true);
 });
+
+test("accepts ELIMINATED as an after-state only when hearts reach zero", () => {
+    const matches = [{ player_a_id: 1, player_b_id: 2 }];
+    const result = auditRoundSnapshotCoverage({
+        matches, byes: [],
+        history: [
+            { player_id: 1, status_before: "DANGER", status_after: "ELIMINATED", hearts_before: 1, hearts_after: 0, infected_before: false, infected_after: false, active_before: true, active_after: false },
+            { player_id: 2, status_before: "SAFE", status_after: "SAFE", hearts_before: 3, hearts_after: 3, infected_before: false, infected_after: false, active_before: true, active_after: true }
+        ]
+    });
+    assert.equal(result.ok, true);
+});
+test("does not allow ELIMINATED before-state or with remaining hearts", () => {
+    const base = { player_id: 1, status_before: "ELIMINATED", status_after: "ELIMINATED", hearts_before: 0, hearts_after: 0, infected_before: false, infected_after: false, active_before: true, active_after: false };
+    const result = auditRoundSnapshotCoverage({ matches: [{ player_a_id: 1, player_b_id: 2 }], byes: [], history: [base] });
+    assert.equal(result.code, "SNAPSHOT_ROW_INVALID");
+});
+test("can audit an individual round without requiring missing earlier rounds", () => {
+    const input = data();
+    input.matches = input.matches.filter(match => match.gameweek_id === 10);
+    const result = auditChapterMatchHistory({
+        ...input, currentGameweek: { chapter: "CHAPTER II", gw_number: 11 },
+        fromGameweek: 10, throughGameweek: 10, requiredPlayerIds: []
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.rounds_checked, 1);
+});
