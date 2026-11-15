@@ -13,6 +13,7 @@
     <link rel="preload" as="image" href="assets/illustrations/chapter-2-the-infection.jpg">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="chapter2.css">
+    <link rel="stylesheet" href="cinematic-intro.css">
 
     <!-- Vercel Web Analytics (static HTML) -->
     <script>
@@ -21,6 +22,37 @@
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="apocalypse-theme chapter-two">
+    <!-- CINEMATIC ENTRY / Phase 01 -->
+    <section id="cinematicIntro" aria-label="THE LAST OF FPL cinematic introduction">
+        <div class="cinematic-intro-inner">
+            <div class="cinematic-intro-main">
+                <div class="cinematic-intro-brand">
+                    <img src="assets/illustrations/official-tournament-logo.jpg" alt="EMPERORES KINGDOM FANTASY logo" width="640" height="640">
+                    <div class="cinematic-intro-brand-copy">
+                        <strong>EMPERORES KINGDOM FANTASY</strong>
+                        <span>OFFICIAL SURVIVAL COMPETITION</span>
+                    </div>
+                </div>
+                <p class="cinematic-intro-kicker">THE QUARANTINE HAS FALLEN</p>
+                <h1 class="cinematic-intro-title">THE LAST OF <span>FPL</span></h1>
+                <p class="cinematic-intro-subtitle">Twenty survivors remain in the fight. Every fixture matters. Every heart counts. Enter the survival arena and follow the road to the final.</p>
+                <div class="cinematic-intro-actions">
+                    <button class="cinematic-enter-btn" type="button" onclick="enterTournament()">ENTER THE GAME <span aria-hidden="true">→</span></button>
+                    <span class="cinematic-intro-hint">A survival competition by EMPERORES KINGDOM FANTASY</span>
+                </div>
+            </div>
+            <aside class="cinematic-intro-dossier" aria-label="Current tournament chapter">
+                <div class="cinematic-dossier-top"><span>FIELD DOSSIER // 02</span><span class="cinematic-dossier-signal">SIGNAL ACTIVE</span></div>
+                <p class="cinematic-dossier-chapter">CURRENT STORYLINE</p>
+                <h2 class="cinematic-dossier-name">CHAPTER II<br>THE INFECTION</h2>
+                <div class="cinematic-dossier-meta">
+                    <div><span>Gameweeks</span><strong>GW09 — GW14</strong></div>
+                    <div><span>Survival rule</span><strong>HEARTS MATTER</strong></div>
+                </div>
+                <p class="cinematic-dossier-warning">WARNING // ZERO HEARTS MEANS ELIMINATION</p>
+            </aside>
+        </div>
+    </section>
 
     <div class="scanline-overlay" aria-hidden="true"></div>
     <div class="particle-ambient" aria-hidden="true"></div>
@@ -782,6 +814,7 @@
 </script>
 
 <!-- Main website JavaScript -->
+<script src="cinematic-intro.js"></script>
 <script src="script.js"></script>
 
 <!-- Vercel Speed Insights (static HTML) -->
