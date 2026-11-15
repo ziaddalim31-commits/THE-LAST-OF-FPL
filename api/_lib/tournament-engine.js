@@ -1,8 +1,11 @@
 "use strict";
 
 function normalizeStatus(value) {
-    const status = String(value || "NORMAL").trim().toUpperCase();
-    return ["SAFE", "NORMAL", "DANGER"].includes(status) ? status : "NORMAL";
+    const status = typeof value === "string" ? value.trim().toUpperCase() : "";
+    if (!["SAFE", "NORMAL", "DANGER"].includes(status)) {
+        throw new Error("PLAYER_STATUS_INVALID");
+    }
+    return status;
 }
 
 function isActive(player) {
