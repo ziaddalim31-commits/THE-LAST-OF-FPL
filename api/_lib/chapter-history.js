@@ -1,6 +1,7 @@
 "use strict";
 
-const VALID_STATUS = new Set(["SAFE", "NORMAL", "DANGER"]);
+const VALID_STATUS_BEFORE = new Set(["SAFE", "NORMAL", "DANGER"]);
+const VALID_STATUS_AFTER = new Set(["SAFE", "NORMAL", "DANGER", "ELIMINATED"]);
 function finite(value) {
     return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 }
@@ -21,8 +22,9 @@ function auditChapterMatchHistory({ gameweeks, matches, byes, players, currentGa
     if (!Number.isInteger(targetGw) || targetGw < 0 || targetGw >= currentGw) {
         return fail("CHAPTER_HISTORY_RANGE_INVALID", targetGw);
     }
+    const firstRequestedGw = Number.isInteger(Number(arguments[0] && arguments[0].fromGameweek)) ? Number(arguments[0].fromGameweek) : null;
     const rounds = gameweeks
-        .filter(row => String(row.chapter || "").trim().toUpperCase() === chapter && Number(row.gw_number) <= targetGw)
+        .filter(row => String(row.chapter || "").trim().toUpperCase() === chapter && Number(row.gw_number) <= targetGw && (firstRequestedGw === null || Number(row.gw_number) >= firstRequestedGw))
         .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
     if (!rounds.length) {
         return { ok: true, checked_through: targetGw, first_gameweek_checked: null, rounds_checked: 0, matches_checked: 0, required_players_checked: requiredPlayerIds.length };
@@ -112,13 +114,23 @@ function auditRoundSnapshotCoverage({ matches, byes, history }) {
         const id = String(row.player_id);
         if (row.player_id === null || row.player_id === undefined || snapshots.has(id)) return { ok: false, code: "SNAPSHOT_DUPLICATED", player_id: row.player_id ?? null };
         snapshots.add(id);
-        const valid = VALID_STATUS.has(String(row.status_before || "").toUpperCase()) &&
-            VALID_STATUS.has(String(row.status_after || "").toUpperCase()) &&
+        const statusBefore = String(row.status_before || "").toUpperCase();
+        const statusAfter = String(row.status_after || "").toUpperCase();
+        const heartsAfter = Number(row.hearts_after);
+        const valid = VALID_STATUS_BEFORE.has(statusBefore) &&
+            VALID_STATUS_AFTER.has(statusAfter) &&
+            (statusAfter !== "ELIMINATED" || heartsAfter === 0) &&
+            (statusAfter === "ELIMINATED" || heartsAfter > 0) &&
             [row.hearts_before, row.hearts_after].every(value => finite(value) && Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 3) &&
             [row.infected_before, row.infected_after, row.active_before, row.active_after].every(value => typeof value === "boolean") &&
             row.active_before === true && Number(row.hearts_before) > 0 &&
             row.active_after === (Number(row.hearts_after) > 0);
-        if (!valid) return { ok: false, code: "SNAPSHOT_ROW_INVALID", player_id: id };
+        if (!valid) return { ok: false, code: "SNAPSHOT_ROW_INVALID", player_id: id, invalid_fields: {
+            status_before: row.status_before, status_after: row.status_after,
+            hearts_before: row.hearts_before, hearts_after: row.hearts_after,
+            infected_before: row.infected_before, infected_after: row.infected_after,
+            active_before: row.active_before, active_after: row.active_after
+        } };
     }
     const missing = [...participants].filter(id => !snapshots.has(id));
     const unexpected = [...snapshots].filter(id => !participants.has(id));
