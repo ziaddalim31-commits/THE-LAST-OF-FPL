@@ -155,7 +155,7 @@ module.exports = async function handler(req, res) {
             "FPL_GAMEWEEK_NOT_FINAL", "MATCH_ALREADY_COMPLETED",
             "FIXTURE_ROSTER_INVALID", "FIXTURE_COVERAGE_INCOMPLETE",
             "MULTIPLE_BYES_FOUND", "NO_MATCHES_FOUND",
-            "FPL_PLAYER_POINTS_UNAVAILABLE", "PREVIEW_INPUT_INVALID"
+            "FPL_PLAYER_POINTS_UNAVAILABLE", "PREVIEW_INPUT_INVALID", "PLAYER_STATUS_INVALID"
         ];
         if (known.includes(message)) return send(res, 409, { error: message });
         console.error("Gameweek confirmation failed:", error);
