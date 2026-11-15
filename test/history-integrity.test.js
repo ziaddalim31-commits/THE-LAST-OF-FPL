@@ -61,6 +61,15 @@ test("rejects a missing survivor from the next round using prior active_after sn
     assert.deepEqual(result.missing_player_ids, ["2"]);
 });
 
+test("rejects survivor state changes that do not carry into the next round", () => {
+    const data = fixtureData();
+    const row = data.history.find(item => item.gameweek_id === 10 && item.player_id === 1);
+    row.hearts_before = 2;
+    const result = auditCompletedHistory({ ...data, throughGameweek: 10 });
+    assert.equal(result.code, "HISTORY_PLAYER_STATE_CONTINUITY_MISMATCH");
+    assert.equal(result.player_id, "1");
+});
+
 test("rejects a completed round with an uncompleted match", () => {
     const data = fixtureData();
     data.matches[2].status = "PENDING";
