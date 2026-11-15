@@ -1,0 +1,88 @@
+/* THE LAST OF FPL — CINEMATIC DASHBOARD. All rules scoped to #page-home. */
+#page-home{--dash-line:rgba(190,211,184,.15);--dash-muted:#9ba99a;--dash-text:#e8eee5;background:#080d0a;color:var(--dash-text);padding-bottom:clamp(58px,8vw,110px)}
+#page-home .dash-shell{width:min(1240px,calc(100% - 48px));margin-inline:auto;position:relative;z-index:1}
+#page-home .dash-hero{position:relative;isolation:isolate;overflow:hidden;min-height:590px;background:#080d0a url("assets/illustrations/hero-endure-city.jpg") center 43%/cover no-repeat;border-bottom:1px solid var(--dash-line)}
+#page-home .dash-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(5,9,7,.97),rgba(5,9,7,.84) 46%,rgba(5,9,7,.35)),linear-gradient(0deg,#080d0a,transparent 36%,rgba(0,0,0,.2))}
+#page-home .dash-hero:after{content:"";position:absolute;inset:0;z-index:-1;opacity:.2;pointer-events:none;background-image:linear-gradient(rgba(210,230,200,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(210,230,200,.045) 1px,transparent 1px);background-size:64px 64px}
+#page-home .dash-hero .dash-shell{padding-top:26px}
+#page-home .dash-topline,#page-home .dash-bottom-line{display:flex;align-items:center;justify-content:space-between;gap:16px;color:#aab7a6;font:600 .64rem/1.4 "Montserrat",sans-serif;letter-spacing:.16em}
+#page-home .dash-eyebrow{display:flex;align-items:center;gap:10px}
+#page-home .dash-eyebrow i,#page-home .dash-pulse{width:7px;height:7px;border-radius:50%;background:#a9cf8c;box-shadow:0 0 14px #9bc77d;display:inline-block}
+#page-home .dash-registry{color:#b4c3ad}
+#page-home .dash-hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(230px,.65fr);align-items:center;gap:clamp(35px,7vw,110px);min-height:460px;padding:56px 0 42px}
+#page-home .dash-hero-copy{max-width:720px}
+#page-home .dash-chapter,#page-home .dash-kicker{margin:0 0 14px;color:#a9c58f;font:700 .67rem/1.4 "Montserrat",sans-serif;letter-spacing:.2em;text-transform:uppercase}
+#page-home .dash-chapter span{color:#73836e;padding:0 8px}
+#page-home #dashboardTitle{margin:0;max-width:780px;color:#f0f2e9;font:800 clamp(3.3rem,8vw,7.4rem)/.82 "Teko","Montserrat",sans-serif;letter-spacing:.015em;text-shadow:0 8px 36px #0009}
+#page-home #dashboardTitle em{color:#b5c9a5;font-style:normal}#page-home #dashboardTitle strong{color:#e5e9df}
+#page-home .dash-intro{max-width:570px;margin:25px 0 26px;color:#c1c9bd;font:400 .94rem/1.85 "Montserrat",sans-serif}
+#page-home .dash-actions{display:flex;flex-wrap:wrap;gap:11px}
+#page-home .dash-btn{min-height:46px;padding:0 17px;border:1px solid #c8dcbd4d;display:inline-flex;align-items:center;justify-content:center;gap:16px;font:700 .63rem/1 "Montserrat",sans-serif;letter-spacing:.1em;cursor:pointer;transition:transform .2s,border-color .2s,background .2s}
+#page-home .dash-btn:hover{transform:translateY(-2px)}
+#page-home .dash-btn-primary{color:#10170f;background:#b8cf9f;border-color:#b8cf9f}
+#page-home .dash-btn-primary:hover{background:#d0e1bd}
+#page-home .dash-btn-ghost{color:#e3e9df;background:#090f0b7a}
+#page-home .dash-btn-ghost:hover{border-color:#b8cf9f;background:#b8cf9f1a}
+#page-home .dash-hero-foot{margin-top:30px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;color:#a1afa0;font:600 .59rem/1.4 "Montserrat",sans-serif;letter-spacing:.13em}
+#page-home .dash-hero-foot b{color:#d6e1ce}#page-home .dash-pulse{width:6px;height:6px}
+#page-home .dash-hero-art{justify-self:center;width:min(100%,330px);text-align:center}
+#page-home .dash-art-frame{position:relative;padding:14px;border:1px solid #bed7b059;background:linear-gradient(145deg,#bed7b01f,#070c08b3);box-shadow:0 25px 75px #0007}
+#page-home .dash-art-frame:before{content:"";position:absolute;inset:7px;border:1px solid #bed7b029;pointer-events:none}
+#page-home .dash-art-frame img{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#0a100c}
+#page-home .dash-art-index{display:block;margin-top:13px;color:#8c9b88;font:600 .57rem/1.5 "Montserrat",sans-serif;letter-spacing:.18em}
+#page-home .dash-bottom-line{padding:16px 0 18px;border-top:1px solid #bed3b02b;color:#7f8e7d;font-size:.56rem}
+#page-home .dash-bottom-line b{color:#a8c48e;padding:0 5px}
+#page-home .dash-section,#page-home .dash-operations,#page-home .dash-featured,#page-home .dash-access{padding-top:62px}
+#page-home .dash-section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:22px}
+#page-home .dash-section-heading .dash-kicker{margin-bottom:8px}
+#page-home .dash-section-heading h2{margin:0;color:#e7ece3;font:700 clamp(1.8rem,4vw,2.8rem)/1 "Teko","Montserrat",sans-serif;letter-spacing:.04em}
+#page-home .dash-section-heading h2 em{color:#a9c58f;font-style:normal}
+#page-home .dash-section-heading p{margin:0 0 3px;color:#879487;text-align:right;font:500 .65rem/1.7 "Montserrat",sans-serif}
+#page-home .dash-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+#page-home .dash-metric{position:relative;min-height:135px;padding:17px 16px;border:1px solid var(--dash-line);background:linear-gradient(145deg,#172219f5,#0c120df5);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+#page-home .dash-metric:after{content:"";position:absolute;right:-26px;bottom:-48px;width:110px;height:110px;border:1px solid #bed7b014;transform:rotate(45deg)}
+#page-home .dash-metric-featured{background:linear-gradient(145deg,#2f422aeb,#101911fa);border-color:#aecf9359}
+#page-home .dash-metric-label{color:#a8b5a3;font:700 .58rem/1.4 "Montserrat",sans-serif;letter-spacing:.12em}
+#page-home .dash-metric strong{color:#edf2e9;font:700 2.8rem/.9 "Teko",sans-serif}
+#page-home .dash-metric small{color:#83917e;font:600 .53rem/1.4 "Montserrat",sans-serif;letter-spacing:.1em}
+#page-home .metric-safe strong{color:#b5d49c}#page-home .metric-normal strong{color:#d3bd83}#page-home .metric-danger strong,#page-home .metric-infected strong{color:#d17b6d}#page-home .metric-eliminated strong{color:#9a9d98}
+#page-home .dash-heart-strip{display:flex;align-items:center;gap:12px;margin-top:11px;padding:15px 18px;border:1px solid var(--dash-line);background:#0e150fcc}
+#page-home .dash-heart-icon{color:#c66c60;font-size:1.25rem}
+#page-home .dash-heart-strip>span:nth-child(2){color:#aeb9a8;font:700 .62rem/1.4 "Montserrat",sans-serif;letter-spacing:.13em}
+#page-home .dash-heart-strip strong{margin-left:auto;color:#e9eee5;font:700 1.8rem/1 "Teko",sans-serif}
+#page-home .dash-heart-strip small{color:#768474;font:600 .52rem/1.4 "Montserrat",sans-serif;letter-spacing:.1em}
+#page-home .dash-text-link{padding:10px 0;border:0;border-bottom:1px solid #b1cd9d66;color:#b7caab;background:none;font:700 .6rem/1.4 "Montserrat",sans-serif;letter-spacing:.12em;cursor:pointer}
+#page-home .dash-ops-grid{display:grid;grid-template-columns:1.4fr .6fr;gap:12px}
+#page-home .dash-ops-main,#page-home .dash-bye-card{min-height:235px;padding:24px;border:1px solid var(--dash-line);background:linear-gradient(135deg,#17231a,#0e150f)}
+#page-home .dash-ops-top{display:flex;justify-content:space-between;gap:12px;color:#91a18c;font:700 .59rem/1.4 "Montserrat",sans-serif;letter-spacing:.14em}
+#page-home .dash-status-chip{padding:5px 8px;border:1px solid #b2cb9e59;color:#c3d5b5}
+#page-home .dash-gw-number{display:block;margin:13px 0 0;color:#edf2e8;font:700 clamp(3.8rem,7vw,6rem)/.9 "Teko",sans-serif}
+#page-home .dash-ops-main>p,#page-home .dash-bye-card p{color:#93a18e;font:500 .7rem/1.6 "Montserrat",sans-serif}
+#page-home .dash-fixture-counts{display:flex;gap:clamp(20px,5vw,60px);margin-top:25px;padding-top:17px;border-top:1px solid var(--dash-line)}
+#page-home .dash-fixture-counts div{display:flex;flex-direction:column;gap:4px}
+#page-home .dash-fixture-counts strong{color:#e4ebdf;font:700 1.6rem/1 "Teko",sans-serif}
+#page-home .dash-fixture-counts span{color:#82907e;font:700 .52rem/1.4 "Montserrat",sans-serif;letter-spacing:.1em}
+#page-home .dash-bye-card{position:relative;overflow:hidden;background:linear-gradient(145deg,#211f17,#12160f)}
+#page-home .dash-bye-card .dash-kicker{color:#c5b17e}
+#page-home .dash-bye-symbol{position:absolute;right:18px;top:12px;color:#c5b17e1f;font:700 7rem/1 "Teko",sans-serif}
+#page-home .dash-bye-card>strong{position:relative;display:block;margin-top:35px;color:#e8e7db;font:700 1.1rem/1.2 "Montserrat",sans-serif}
+#page-home .dash-survivor-card{display:grid;grid-template-columns:145px minmax(0,1fr) auto;align-items:center;gap:24px;padding:22px 25px;border:1px solid #b1cd9d38;background:linear-gradient(105deg,#253725cc,#0d140ffe)}
+#page-home .dash-survivor-mark{padding:16px 10px;border:1px solid #b1cd9d33;color:#879981;text-align:center;font:700 .58rem/1.7 "Montserrat",sans-serif;letter-spacing:.15em}
+#page-home .dash-survivor-mark b{color:#b8cf9f}
+#page-home .dash-survivor-state{color:#b6cf9f;font:700 .59rem/1.4 "Montserrat",sans-serif;letter-spacing:.14em}
+#page-home .dash-survivor-copy h3{margin:8px 0 5px;color:#edf1e8;font:700 clamp(1.5rem,3vw,2.2rem)/1 "Teko",sans-serif}
+#page-home .dash-survivor-copy p{margin:0;color:#8d9b89;font:500 .67rem/1.6 "Montserrat",sans-serif}
+#page-home .dash-survivor-stats{display:flex;gap:25px}
+#page-home .dash-survivor-stats div{display:flex;flex-direction:column;gap:5px}
+#page-home .dash-survivor-stats strong{color:#e7eee1;font:700 1.8rem/1 "Teko",sans-serif}
+#page-home .dash-survivor-stats span{color:#8c9a87;font:700 .53rem/1.4 "Montserrat",sans-serif;letter-spacing:.12em}
+#page-home .dash-access-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#page-home .dash-access-grid button{position:relative;min-height:145px;padding:17px;border:1px solid var(--dash-line);background:linear-gradient(145deg,#17231a,#0c120d);color:#e7eee3;text-align:left;cursor:pointer;transition:transform .2s,border-color .2s,background .2s}
+#page-home .dash-access-grid button:hover{transform:translateY(-3px);border-color:#b1cd9d8c;background:linear-gradient(145deg,#203222,#101810)}
+#page-home .dash-access-grid button>span{display:block;color:#8c9d84;font:700 .6rem/1 "Montserrat",sans-serif}
+#page-home .dash-access-grid button strong{display:block;margin-top:22px;font:700 1.35rem/1 "Teko",sans-serif;letter-spacing:.06em}
+#page-home .dash-access-grid button small{display:block;margin-top:6px;color:#81907c;font:600 .5rem/1.4 "Montserrat",sans-serif;letter-spacing:.08em}
+#page-home .dash-access-grid button>b{position:absolute;right:16px;top:15px;color:#a9c58f;font-size:1rem}
+@media(max-width:900px){#page-home .dash-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}#page-home .dash-hero-grid{grid-template-columns:minmax(0,1fr) 220px;gap:28px}#page-home .dash-hero-art{width:220px}#page-home .dash-access-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){#page-home .dash-shell{width:min(calc(100% - 30px),1240px)}#page-home .dash-hero{min-height:0;background-position:58% center}#page-home .dash-hero-grid{grid-template-columns:1fr;min-height:0;padding:62px 0 35px}#page-home .dash-hero-art{display:none}#page-home .dash-topline{align-items:flex-start;flex-direction:column;gap:8px}#page-home .dash-eyebrow{font-size:.52rem}#page-home #dashboardTitle{font-size:clamp(3.5rem,17vw,5.6rem)}#page-home .dash-intro{font-size:.82rem}#page-home .dash-actions{display:grid;grid-template-columns:1fr}#page-home .dash-btn{width:100%}#page-home .dash-bottom-line{align-items:flex-start;flex-direction:column;gap:7px;font-size:.48rem}#page-home .dash-section,#page-home .dash-operations,#page-home .dash-featured,#page-home .dash-access{padding-top:44px}#page-home .dash-section-heading{align-items:flex-start;flex-direction:column;gap:10px}#page-home .dash-section-heading p{text-align:left}#page-home .dash-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#page-home .dash-metric{min-height:118px;padding:13px}#page-home .dash-heart-strip{flex-wrap:wrap;gap:8px}#page-home .dash-heart-strip small{width:100%;padding-left:30px}#page-home .dash-ops-grid{grid-template-columns:1fr}#page-home .dash-ops-main,#page-home .dash-bye-card{min-height:210px;padding:18px}#page-home .dash-fixture-counts{justify-content:space-between;gap:10px}#page-home .dash-fixture-counts span{font-size:.46rem}#page-home .dash-survivor-card{grid-template-columns:1fr;gap:15px;padding:18px}#page-home .dash-survivor-mark{display:none}#page-home .dash-survivor-stats{gap:30px}#page-home .dash-access-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#page-home .dash-access-grid button{min-height:130px;padding:13px}#page-home .dash-access-grid button strong{font-size:1.15rem}}
+@media(prefers-reduced-motion:reduce){#page-home .dash-btn,#page-home .dash-access-grid button{transition:none}#page-home .dash-btn:hover,#page-home .dash-access-grid button:hover{transform:none}}
