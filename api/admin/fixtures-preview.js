@@ -119,7 +119,7 @@ module.exports = async function handler(req, res) {
         if (!historyAudit.ok) {
             return send(res, 409, {
                 error: "HISTORY_INTEGRITY_FAILED",
-                detail: "Completed round history is incomplete or inconsistent. No fixture preview was generated.",
+                detail: `${historyAudit.code} at GW${historyAudit.gameweek || integrityThrough}. No fixture preview was generated.`,
                 audit: historyAudit
             });
         }
