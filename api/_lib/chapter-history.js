@@ -10,7 +10,7 @@ function fail(code, gameweek, details = {}) {
 }
 
 /** Audits the recorded opponent pairs in the current chapter; snapshots are not required. */
-function auditChapterMatchHistory({ gameweeks, matches, byes, players, currentGameweek, throughGameweek, requiredPlayerIds = [] }) {
+function auditChapterMatchHistory({ gameweeks, matches, byes, players, currentGameweek, throughGameweek, fromGameweek = null, requiredPlayerIds = [] }) {
     if (![gameweeks, matches, byes, players, requiredPlayerIds].every(Array.isArray) ||
         !currentGameweek || !Number.isInteger(Number(currentGameweek.gw_number)) ||
         !String(currentGameweek.chapter || "").trim()) {
@@ -22,7 +22,7 @@ function auditChapterMatchHistory({ gameweeks, matches, byes, players, currentGa
     if (!Number.isInteger(targetGw) || targetGw < 0 || targetGw >= currentGw) {
         return fail("CHAPTER_HISTORY_RANGE_INVALID", targetGw);
     }
-    const firstRequestedGw = Number.isInteger(Number(arguments[0] && arguments[0].fromGameweek)) ? Number(arguments[0].fromGameweek) : null;
+    const firstRequestedGw = fromGameweek === null || fromGameweek === undefined ? null : Number(fromGameweek);
     const rounds = gameweeks
         .filter(row => String(row.chapter || "").trim().toUpperCase() === chapter && Number(row.gw_number) <= targetGw && (firstRequestedGw === null || Number(row.gw_number) >= firstRequestedGw))
         .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
