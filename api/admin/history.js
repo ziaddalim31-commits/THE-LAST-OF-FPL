@@ -49,6 +49,7 @@ module.exports = async function handler(req, res) {
             const opponentAudit = auditChapterMatchHistory({
                 gameweeks, matches, byes, players,
                 currentGameweek: { chapter: gameweek.chapter, gw_number: Number(gameweek.gw_number) + 1 },
+                fromGameweek: Number(gameweek.gw_number),
                 throughGameweek: Number(gameweek.gw_number),
                 requiredPlayerIds: []
             });
