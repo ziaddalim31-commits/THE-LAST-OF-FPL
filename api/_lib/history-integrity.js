@@ -46,6 +46,7 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
     const firstGw = Math.min(...recordedIds);
 
     let previousActive = null;
+    let previousSnapshots = null;
     let roundsChecked = 0;
     for (let gw = firstGw; gw <= target; gw += 1) {
         const rows = gameweekRows.filter(row => Number(row.gw_number) === gw);
@@ -107,7 +108,10 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
                     finite(value) && Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 3
                 ) &&
                 [row.infected_before, row.infected_after, row.active_before, row.active_after]
-                    .every(value => typeof value === "boolean");
+                    .every(value => typeof value === "boolean") &&
+                row.active_before === true &&
+                (Number(row.hearts_before) > 0) &&
+                (row.active_after === (Number(row.hearts_after) > 0));
             if (!valid) return failure("HISTORY_SNAPSHOT_INVALID", gw, { player_id: id });
         }
 
@@ -124,7 +128,23 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
                 unexpected_player_ids: [...participantIds].filter(id => !previousActive.has(id))
             });
         }
+        if (previousSnapshots !== null) {
+            const previousByPlayer = new Map(previousSnapshots.map(row => [String(row.player_id), row]));
+            for (const row of roundHistory) {
+                const prior = previousByPlayer.get(String(row.player_id));
+                if (!prior ||
+                    String(prior.status_after).toUpperCase() !== String(row.status_before).toUpperCase() ||
+                    Number(prior.hearts_after) !== Number(row.hearts_before) ||
+                    prior.infected_after !== row.infected_before ||
+                    prior.active_after !== row.active_before) {
+                    return failure("HISTORY_PLAYER_STATE_CONTINUITY_MISMATCH", gw, {
+                        player_id: String(row.player_id)
+                    });
+                }
+            }
+        }
 
+        previousSnapshots = roundHistory;
         previousActive = new Set(roundHistory
             .filter(row => row.active_after === true)
             .map(row => String(row.player_id)));
