@@ -867,6 +867,56 @@ function syncJourneyLedger() {
         });
     });
 
+    // Dashboard panels are projections of the existing Supabase-backed state.
+    const setDashboardText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+    setDashboardText("homeRegistryStatus", loaded && matchesLoadedFromDatabase
+        ? "REGISTRY // CONNECTED"
+        : loaded ? "REGISTRY // PARTIAL" : "REGISTRY // UNAVAILABLE");
+
+    const gwStatus = currentGameweek
+        ? String(currentGameweek.status || "UNKNOWN").toUpperCase()
+        : "UNAVAILABLE";
+    setDashboardText("homeGwNumber", currentGameweek ? `GW${currentGameweek.gw_number}` : "GW—");
+    setDashboardText("homeGwStatus", gwStatus);
+    setDashboardText("homeGwChapter", currentGameweek
+        ? `Chapter ${currentGameweek.chapter ?? "—"} · ${gwStatus.toLowerCase()} gameweek`
+        : "No current gameweek is available in the registry.");
+
+    const completedFixtures = currentMatches.filter(match =>
+        String(match.status || "").toUpperCase() === "COMPLETED"
+    ).length;
+    const pendingFixtures = currentMatches.filter(match =>
+        String(match.status || "").toUpperCase() !== "COMPLETED"
+    ).length;
+    setDashboardText("homeFixtureTotal", matchesLoadedFromDatabase ? currentMatches.length : "—");
+    setDashboardText("homeFixtureCompleted", matchesLoadedFromDatabase ? completedFixtures : "—");
+    setDashboardText("homeFixturePending", matchesLoadedFromDatabase ? pendingFixtures : "—");
+
+    const byePlayer = currentGameweekBye ? getPlayerById(currentGameweekBye.player_id) : null;
+    setDashboardText("homeByeName", byePlayer ? byePlayer.name : "NO BYE RECORDED");
+    setDashboardText("homeByeNote", currentGameweekBye
+        ? "Official bye record for this gameweek."
+        : matchesLoadedFromDatabase ? "No bye is recorded for this gameweek."
+        : "Bye information is unavailable until fixtures load.");
+
+    const featuredSurvivor = loaded
+        ? getSortedRoster(roster.filter(player => player.is_active === true))[0]
+        : null;
+    setDashboardText("homeFeaturedName", featuredSurvivor ? featuredSurvivor.name : "Survivor data unavailable");
+    setDashboardText("homeFeaturedState", featuredSurvivor
+        ? (isInfectedPlayer(featuredSurvivor) ? "INFECTED // " : "") + getDisplayState(featuredSurvivor)
+        : "REGISTRY PENDING");
+    setDashboardText("homeFeaturedHearts", featuredSurvivor ? `${getPlayerHearts(featuredSurvivor)}/3` : "—");
+    setDashboardText("homeFeaturedPoints", featuredSurvivor && getGameweekPoints(featuredSurvivor) !== null
+        ? getGameweekPoints(featuredSurvivor) : "—");
+    setDashboardText("homeFeaturedPointsLabel", gwPointsGameweek ? `GW${gwPointsGameweek.gw_number} PTS` : "LATEST PTS");
+    setDashboardText("homeFeaturedMeta", featuredSurvivor
+        ? "Highest-ranked active survivor by the official standings order."
+        : "The featured survivor is selected from verified active player records.");
+
     syncFilterLabels();
     publishDebugState();
 }
