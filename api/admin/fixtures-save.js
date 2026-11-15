@@ -2,6 +2,7 @@
 
 const { generateFixtures, pairKey, filterPreviousMatchesToChapter } = require("../_lib/fixture-generator");
 const { selectNextFixtureGameweek, isPreviousGameweekConfirmed } = require("../_lib/next-gameweek");
+const { auditCompletedHistory } = require("../_lib/history-integrity");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -68,11 +69,12 @@ module.exports = async function handler(req, res) {
             return send(res, 400, { error: "FIXTURE_APPROVAL_PAYLOAD_REQUIRED" });
         }
 
-        const [players, gameweeks, allMatches, allByes] = await Promise.all([
+        const [players, gameweeks, allMatches, allByes, history] = await Promise.all([
             db("players?select=id,name,status,hearts,is_infected,is_active&order=id.asc"),
             db("gameweeks?select=id,gw_number,chapter,status&order=gw_number.asc"),
-            db("matches?select=id,gameweek_id,player_a_id,player_b_id,status&order=id.asc"),
-            db("gameweek_byes?select=id,gameweek_id,player_id")
+            db("matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,winner_method,status&order=id.asc"),
+            db("gameweek_byes?select=id,gameweek_id,player_id"),
+            db("player_gameweek_history?select=gameweek_id,player_id,status_before,status_after,hearts_before,hearts_after,infected_before,infected_after,active_before,active_after&order=gameweek_id.asc,player_id.asc")
         ]);
 
         const pendingGameweeks = gameweeks
@@ -111,6 +113,21 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        const historyAudit = auditCompletedHistory({
+            gameweeks,
+            matches: allMatches,
+            byes: allByes,
+            history,
+            throughGameweek: currentGw - 1
+        });
+        if (!historyAudit.ok) {
+            return send(res, 409, {
+                error: "HISTORY_INTEGRITY_FAILED",
+                detail: "Completed round history is incomplete or inconsistent. Fixtures were not saved.",
+                audit: historyAudit
+            });
+        }
+
         const existingForCurrent = allMatches.some(row => String(row.gameweek_id) === String(gameweek.id)) ||
             allByes.some(row => String(row.gameweek_id) === String(gameweek.id));
         if (existingForCurrent) return send(res, 409, { error: "FIXTURES_ALREADY_EXIST", gameweek: currentGw });
@@ -129,7 +146,8 @@ module.exports = async function handler(req, res) {
 
         const submittedPairs = normalizedPairSet(body.fixtures);
         const generatedPairs = normalizedPairSet(generated.matches);
-        if (submittedPairs.size !== generatedPairs.size ||
+        if (body.fixtures.length !== generated.matches.length ||
+            submittedPairs.size !== generatedPairs.size ||
             [...generatedPairs].some(pair => !submittedPairs.has(pair))) {
             return send(res, 409, {
                 error: "FIXTURE_PREVIEW_MISMATCH",
