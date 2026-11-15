@@ -185,10 +185,35 @@ function renderHeartMarks(hearts) {
 }
 
 function getSortedRoster(players = roster) {
-    return [...players].sort((a, b) =>
-        (STATUS_ORDER[getDisplayState(a)] ?? 4) -
-        (STATUS_ORDER[getDisplayState(b)] ?? 4)
-    );
+    return [...players].sort((a, b) => {
+        // 1. Tournament state: SAFE → NORMAL → DANGER → ELIMINATED.
+        const stateDifference =
+            (STATUS_ORDER[getDisplayState(a)] ?? 4) -
+            (STATUS_ORDER[getDisplayState(b)] ?? 4);
+
+        if (stateDifference !== 0) return stateDifference;
+
+        // 2. More remaining hearts rank higher.
+        const heartDifference = getPlayerHearts(b) - getPlayerHearts(a);
+        if (heartDifference !== 0) return heartDifference;
+
+        // 3. Higher points in the latest completed gameweek rank higher.
+        const pointsA = getGameweekPoints(a);
+        const pointsB = getGameweekPoints(b);
+
+        if (pointsA === null && pointsB !== null) return 1;
+        if (pointsA !== null && pointsB === null) return -1;
+        if (pointsA !== null && pointsB !== null && pointsA !== pointsB) {
+            return pointsB - pointsA;
+        }
+
+        // 4. Stable alphabetical fallback.
+        return String(a.name || "").localeCompare(
+            String(b.name || ""),
+            "en",
+            { sensitivity: "base" }
+        );
+    });
 }
 
 function getRankMap() {
@@ -442,8 +467,8 @@ function syncPointsNote() {
     const label = getPointsGwLabel();
 
     note.textContent = gwPointsLoaded
-        ? `Survivors are grouped SAFE → NORMAL → DANGER. Points are verified ${label} scores from the latest completed gameweek.`
-        : `Survivors are grouped SAFE → NORMAL → DANGER. ${label} scores are currently unavailable.`;
+        ? `Rankings: state → hearts (high to low) → ${label} points (high to low) → alphabetical. Points are verified scores from the latest completed gameweek.`
+        : `Rankings: state → hearts (high to low) → alphabetical. ${label} scores are currently unavailable.`;
 }
 
 // ---------------------------------------------------------
