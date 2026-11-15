@@ -51,7 +51,9 @@ test("rejects missing match rows even if a partial history snapshot exists", () 
 
 test("rejects a missing survivor from the next round using prior active_after snapshots", () => {
     const data = fixtureData();
-    data.matches.push({ id: 102, gameweek_id: 10, player_a_id: 1, player_b_id: 3, points_a: 40, points_b: 44, winner_id: 3, status: "COMPLETED" });
+    data.matches = data.matches.map(match => match.gameweek_id === 10
+        ? { ...match, player_a_id: 1, player_b_id: 3, winner_id: 3 }
+        : match);
     data.history = data.history.filter(row => !(row.gameweek_id === 10 && row.player_id === 2));
     data.history.push({ gameweek_id: 10, player_id: 3, status_before: "NORMAL", status_after: "SAFE", hearts_before: 3, hearts_after: 3, infected_before: false, infected_after: false, active_before: true, active_after: true });
     const result = auditCompletedHistory({ ...data, throughGameweek: 10 });
