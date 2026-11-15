@@ -47,6 +47,7 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
 
     let previousActive = null;
     let previousSnapshots = null;
+    let previousChapter = null;
     let roundsChecked = 0;
     for (let gw = firstGw; gw <= target; gw += 1) {
         const rows = gameweekRows.filter(row => Number(row.gw_number) === gw);
@@ -132,10 +133,12 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
             const previousByPlayer = new Map(previousSnapshots.map(row => [String(row.player_id), row]));
             for (const row of roundHistory) {
                 const prior = previousByPlayer.get(String(row.player_id));
+                const sameChapter = String(previousChapter || "").trim().toUpperCase() ===
+                    String(round.chapter || "").trim().toUpperCase();
                 if (!prior ||
                     String(prior.status_after).toUpperCase() !== String(row.status_before).toUpperCase() ||
                     Number(prior.hearts_after) !== Number(row.hearts_before) ||
-                    prior.infected_after !== row.infected_before ||
+                    (sameChapter && prior.infected_after !== row.infected_before) ||
                     prior.active_after !== row.active_before) {
                     return failure("HISTORY_PLAYER_STATE_CONTINUITY_MISMATCH", gw, {
                         player_id: String(row.player_id)
@@ -145,6 +148,7 @@ function auditCompletedHistory({ gameweeks, matches, byes, history, throughGamew
         }
 
         previousSnapshots = roundHistory;
+        previousChapter = round.chapter;
         previousActive = new Set(roundHistory
             .filter(row => row.active_after === true)
             .map(row => String(row.player_id)));
