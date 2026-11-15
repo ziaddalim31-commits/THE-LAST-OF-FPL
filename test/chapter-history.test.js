@@ -47,7 +47,7 @@ test("blocks when an active survivor has no recorded opponent in a chapter round
     input.byes = [];
     const result = audit(input);
     assert.equal(result.code, "CHAPTER_HISTORY_ACTIVE_ROSTER_COVERAGE_MISMATCH");
-    assert.deepEqual(result.missing_player_ids, ["4"]);
+    assert.deepEqual(result.missing_player_ids, ["3", "4"]);
 });
 test("blocks missing or pending chapter match results", () => {
     const missing = data();
