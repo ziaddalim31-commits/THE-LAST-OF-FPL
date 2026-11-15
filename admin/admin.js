@@ -472,22 +472,38 @@ async function setupSaveGw11FixturesButton() {
   const button = document.getElementById("save-gw11-fixtures-button");
   if (!button || !lastGw11FixturePreview) return;
 
+  let saveInProgress = false;
+
   button.addEventListener("click", async () => {
-    if (!window.confirm(`Save these exact GW${lastGw11FixturePreview.gameweek.gw_number} fixtures and the displayed bye to Supabase?`)) return;
+    if (saveInProgress || !lastGw11FixturePreview) return;
 
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
-    if (!accessToken) {
-      showMessage("SESSION EXPIRED — Please authenticate again.");
-      showLogin();
-      return;
-    }
+    const approvedPreview = lastGw11FixturePreview;
+    const targetGameweek = approvedPreview.gameweek.gw_number;
+    const preview = approvedPreview.preview;
 
+    if (!window.confirm(`Save these exact GW${targetGameweek} fixtures and the displayed bye to Supabase?`)) return;
+
+    saveInProgress = true;
     button.disabled = true;
     button.textContent = "SAVING APPROVED FIXTURES...";
-    const targetGameweek = lastGw11FixturePreview.gameweek.gw_number;
-    const preview = lastGw11FixturePreview.preview;
+
+    const controller = new AbortController();
+    let requestStarted = false;
+    let saved = false;
+    let saveOutcomeUnknown = false;
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+
     try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError) throw new Error(`SESSION_CHECK_FAILED: ${sessionError.message}`);
+
+      const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+      if (!accessToken) {
+        showLogin();
+        throw new Error("SESSION_EXPIRED — Please authenticate again.");
+      }
+
+      requestStarted = true;
       const response = await fetch("/api/admin/fixtures-save", {
         method: "POST",
         headers: {
@@ -497,28 +513,71 @@ async function setupSaveGw11FixturesButton() {
         body: JSON.stringify({
           fixtures: preview.matches,
           bye_player_id: preview.bye ? preview.bye.player_id : null
-        })
+        }),
+        signal: controller.signal
       });
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.detail || result.error || "FIXTURE_SAVE_FAILED");
+
+      const result = await response.json().catch(() => null);
+      if (!result) {
+        saveOutcomeUnknown = response.ok;
+        throw new Error(response.ok ? "SAVE_RESPONSE_UNREADABLE" : `HTTP_${response.status}`);
       }
 
-      const savedGameweek = targetGameweek;
+      if (!response.ok || !result.success) {
+        const detail = result.detail || result.error || "FIXTURE_SAVE_FAILED";
+
+        if (result.error === "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED") {
+          lastGw11FixturePreview = null;
+          button.textContent = "REGENERATE AFTER PREVIOUS RESULTS";
+          const note = document.createElement("p");
+          note.textContent = `${detail} The old preview is no longer valid; confirm the previous gameweek, then generate a fresh fixture preview.`;
+          gw11FixturePanel.appendChild(note);
+        }
+
+        throw new Error(detail);
+      }
+
+      if (Number(result.gameweek && result.gameweek.gw_number) !== Number(targetGameweek)) {
+        saveOutcomeUnknown = true;
+        throw new Error("SERVER_GAMEWEEK_MISMATCH — verify saved fixtures before taking another action.");
+      }
+
+      saved = true;
       lastGw11FixturePreview = null;
       gw11FixturePanel.innerHTML = `
-        <h3>GW${escapeHTML(savedGameweek)} — FIXTURES SAVED</h3>
-        <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
+        <h3>GW${escapeHTML(targetGameweek)} — FIXTURES SAVED</h3>
+        <p>${escapeHTML(result.saved && result.saved.matches_created)} fixtures saved successfully.</p>
         <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
-      showMessage(`GW${savedGameweek} FIXTURES SAVED.`, true);
+      showMessage(`GW${targetGameweek} FIXTURES SAVED.`, true);
       await loadAdminData(accessToken).catch(error => {
-        showMessage(`GW${savedGameweek} FIXTURES ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
+        showMessage(`GW${targetGameweek} FIXTURES ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
       });
     } catch (error) {
-      button.disabled = false;
-      button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
-      showMessage(`FIXTURES NOT SAVED: ${error.message}`);
+      const uncertain = requestStarted && (
+        saveOutcomeUnknown ||
+        error.name === "AbortError" ||
+        error instanceof TypeError
+      );
+
+      if (uncertain) {
+        saveOutcomeUnknown = true;
+        button.disabled = true;
+        button.textContent = "SAVE STATUS UNKNOWN — REFRESH TO VERIFY";
+        showMessage("SAVE RESULT UNKNOWN — the request may have reached the server. Refresh the admin page and check the target gameweek's fixtures before retrying.");
+      } else {
+        button.disabled = false;
+        if (lastGw11FixturePreview) {
+          button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
+        }
+        showMessage(`FIXTURES NOT SAVED: ${error.message}`);
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
+      saveInProgress = false;
+      if (!saved && !saveOutcomeUnknown && lastGw11FixturePreview) {
+        button.disabled = false;
+      }
     }
   });
 }

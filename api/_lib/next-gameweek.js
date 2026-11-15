@@ -32,4 +32,10 @@ function selectNextFixtureGameweek(gameweeks, matches = [], byes = []) {
     }) || null;
 }
 
-module.exports = { selectNextFixtureGameweek };
+function isPreviousGameweekConfirmed(gameweeks, gameweek) {
+    if (!Array.isArray(gameweeks) || !gameweek) return false;
+    const previous = gameweeks.find(item => Number(item.gw_number) === Number(gameweek.gw_number) - 1);
+    return Boolean(previous && String(previous.status || "").trim().toUpperCase() === "COMPLETED");
+}
+
+module.exports = { selectNextFixtureGameweek, isPreviousGameweekConfirmed };

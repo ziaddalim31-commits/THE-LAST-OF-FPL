@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { selectNextFixtureGameweek } = require("../api/_lib/next-gameweek");
+const { selectNextFixtureGameweek, isPreviousGameweekConfirmed } = require("../api/_lib/next-gameweek");
 
 function gw(number, status = "PENDING") {
     return { id: number, gw_number: number, status };
@@ -43,4 +43,17 @@ test("a BYE-only pending gameweek counts as already assigned", () => {
 test("does not select a round if the immediately previous round is missing", () => {
     const gameweeks = [gw(10, "PENDING"), gw(12, "PENDING")];
     assert.equal(selectNextFixtureGameweek(gameweeks, [], []), null);
+});
+
+
+test("GW11 may be previewed while GW10 is pending, but cannot be saved until GW10 is completed", () => {
+    const gameweeks = [gw(9, "COMPLETED"), gw(10, "PENDING"), gw(11, "PENDING")];
+    const matches = [{ gameweek_id: 10, player_a_id: 1, player_b_id: 2 }];
+    const target = selectNextFixtureGameweek(gameweeks, matches, []);
+
+    assert.equal(target.gw_number, 11);
+    assert.equal(isPreviousGameweekConfirmed(gameweeks, target), false);
+
+    gameweeks[1].status = "COMPLETED";
+    assert.equal(isPreviousGameweekConfirmed(gameweeks, target), true);
 });
