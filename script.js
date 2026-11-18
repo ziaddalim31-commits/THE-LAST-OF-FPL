@@ -709,7 +709,8 @@ function syncFilterLabels() {
         ALL: roster.length,
         SAFE: roster.filter(player => getDisplayState(player) === "SAFE").length,
         NORMAL: roster.filter(player => getDisplayState(player) === "NORMAL").length,
-        DANGER: roster.filter(player => getDisplayState(player) === "DANGER").length
+        DANGER: roster.filter(player => getDisplayState(player) === "DANGER").length,
+        INFECTED: roster.filter(isInfectedPlayer).length
     };
 
     document.querySelectorAll("[data-filter]").forEach(button => {
@@ -722,19 +723,79 @@ function syncFilterLabels() {
     });
 }
 
+function renderLeaderboardPodium() {
+    const container = document.getElementById("leaderboard-podium");
+    if (!container) return;
+
+    if (!playersLoadedFromDatabase) {
+        container.innerHTML = `
+            <div class="podium-empty" role="status">
+                <span class="podium-empty-title">SURVIVOR RANKING UNAVAILABLE</span>
+                <span class="podium-empty-text">The active player registry could not be loaded.</span>
+            </div>
+        `;
+        return;
+    }
+
+    // The podium is intentionally independent from search and status filters.
+    // Only active players qualify; ranking uses the official full-roster order.
+    const activePlayers = getSortedRoster(
+        roster.filter(player => player.is_active === true)
+    ).slice(0, 3);
+    const rankById = getRankMap();
+
+    if (activePlayers.length === 0) {
+        container.innerHTML = `
+            <div class="podium-empty">
+                <span class="podium-empty-title">NO ACTIVE SURVIVORS</span>
+                <span class="podium-empty-text">No active player is currently registered.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const places = ["FIRST", "SECOND", "THIRD"];
+
+    container.innerHTML = activePlayers.map((player, index) => {
+        const rank = rankById.get(String(player.id)) || "—";
+        const hearts = getPlayerHearts(player);
+        const state = getDisplayState(player);
+        const infected = isInfectedPlayer(player);
+
+        return `
+            <article class="podium-card podium-place-${index + 1}" data-player-id="${escapeHTML(player.id)}">
+                <div class="podium-card-head">
+                    <span class="podium-place-label">${places[index]}</span>
+                    <span class="podium-rank">#${String(rank).padStart(2, "0")}</span>
+                </div>
+                <div class="podium-player-name">${escapeHTML(player.name)}</div>
+                <div class="podium-player-tags">
+                    <span class="status ${getStateClass(player)}">${escapeHTML(state)}</span>
+                    ${infected ? '<span class="status infected c2-infected-tag">INFECTED</span>' : ""}
+                </div>
+                <div class="podium-vitals">
+                    <span class="podium-hearts">${renderHeartMarks(hearts)}</span>
+                    <span class="podium-heart-count">${hearts}/3</span>
+                </div>
+                <div class="podium-points">
+                    <strong>${formatGameweekPoints(player)}</strong>
+                    <span>${escapeHTML(getPointsGwLabel())} PTS</span>
+                </div>
+            </article>
+        `;
+    }).join("");
+}
+
 function filterStandings(status = null, button = null) {
     if (typeof status === "string") {
         const nextFilter = status.trim().toUpperCase();
-        activeStatusFilter = ["ALL", "SAFE", "NORMAL", "DANGER"].includes(nextFilter)
+        activeStatusFilter = ["ALL", "SAFE", "NORMAL", "DANGER", "INFECTED"].includes(nextFilter)
             ? nextFilter
             : "ALL";
     }
 
     document.querySelectorAll(".filter-group .f-btn").forEach(item => {
-        const active = button
-            ? item === button
-            : item.dataset.filter === activeStatusFilter;
-
+        const active = item.dataset.filter === activeStatusFilter;
         item.classList.toggle("active", active);
         item.setAttribute("aria-pressed", String(active));
     });
@@ -743,16 +804,19 @@ function filterStandings(status = null, button = null) {
     activeSearch = (searchInput?.value || "").trim().toLowerCase();
 
     const filtered = roster.filter(player => {
-        const matchesSearch = player.name.toLowerCase().includes(activeSearch);
-        const matchesStatus =
+        const matchesSearch = String(player.name || "").toLowerCase().includes(activeSearch);
+        const matchesFilter =
             activeStatusFilter === "ALL" ||
-            getDisplayState(player) === activeStatusFilter;
+            (activeStatusFilter === "INFECTED"
+                ? isInfectedPlayer(player)
+                : getDisplayState(player) === activeStatusFilter);
 
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesFilter;
     });
 
     renderStandings(filtered);
     renderSurvivorCards(filtered);
+    renderLeaderboardPodium();
     syncSearchClear();
 
     const count = document.getElementById("survivorDossierCount");
@@ -881,8 +945,11 @@ function syncJourneyLedger() {
         : "UNAVAILABLE";
     setDashboardText("homeGwNumber", currentGameweek ? `GW${currentGameweek.gw_number}` : "GW—");
     setDashboardText("homeGwStatus", gwStatus);
+    const chapterLabel = String(currentGameweek?.chapter ?? "—")
+        .replace(/^\s*chapter\b\s*/i, "")
+        .trim() || "—";
     setDashboardText("homeGwChapter", currentGameweek
-        ? `Chapter ${currentGameweek.chapter ?? "—"} · ${gwStatus.toLowerCase()} gameweek`
+        ? `Chapter ${chapterLabel} · ${gwStatus.toLowerCase()} gameweek`
         : "No current gameweek is available in the registry.");
 
     const completedFixtures = currentMatches.filter(match =>
@@ -1039,6 +1106,12 @@ function renderMatchCard(match, number = 0, type = "other") {
             ? String(match.player_a_id)
             : String(match.player_b_id);
     }
+    const isDraw = isCompleted &&
+        !winnerId &&
+        bothScored &&
+        Number.isFinite(pointsA) &&
+        Number.isFinite(pointsB) &&
+        pointsA === pointsB;
 
     if (!playerA || !playerB) {
         console.warn("Missing player for match:", match.id, {
@@ -1069,12 +1142,13 @@ function renderMatchCard(match, number = 0, type = "other") {
             ? (String(player.id) === winnerId ? "winner" : "loser")
             : "";
         const resultClass = result ? `is-${result}` : "";
+        const drawClass = isDraw ? "is-draw" : "";
         const resultTag = result
             ? `<span class="match-result-tag ${result}">${result === "winner" ? "WINNER" : "LOSER"}</span>`
             : "";
 
         return `
-            <div class="match-player state-${stateClass} ${resultClass}" data-player-id="${escapeHTML(player.id)}">
+            <div class="match-player state-${stateClass} ${resultClass} ${drawClass}" data-player-id="${escapeHTML(player.id)}">
                 <span class="match-avatar" aria-hidden="true">${escapeHTML(getInitials(player.name))}</span>
                 <button type="button" class="match-name match-name-trigger" title="View FPL lineup for ${escapeHTML(player.name)}" aria-haspopup="dialog" data-lineup-player="${escapeHTML(player.id)}">${escapeHTML(player.name)}</button>
                 <span class="status ${stateClass}">${escapeHTML(displayState)}</span>
@@ -1094,14 +1168,17 @@ function renderMatchCard(match, number = 0, type = "other") {
     }
 
     return `
-        <article class="match-card match-card--${type}" data-match-id="${escapeHTML(match.id)}" data-match-status="${statusClass}" data-winner-id="${escapeHTML(winnerId || "")}">
+        <article class="match-card match-card--${type}${isDraw ? " match-card--draw" : ""}" data-match-id="${escapeHTML(match.id)}" data-match-status="${statusClass}" data-winner-id="${escapeHTML(winnerId || "")}">
             <div class="match-card-head">
                 <span class="match-number">${matchNumber}</span>
-                <span class="match-badge ${statusClass}">${escapeHTML(status)}</span>
+                <span class="match-card-meta">
+                    ${isDraw ? '<span class="match-draw-badge">DRAW</span>' : ""}
+                    <span class="match-badge ${statusClass}">${escapeHTML(status)}</span>
+                </span>
             </div>
             <div class="match-body">
                 ${playerMarkup(playerA, match.points_a)}
-                <div class="match-vs" aria-hidden="true">VS</div>
+                <div class="match-vs${isDraw ? " is-draw" : ""}" aria-hidden="true">${isDraw ? "DRAW" : "VS"}</div>
                 ${playerMarkup(playerB, match.points_b)}
             </div>
         </article>
@@ -1177,22 +1254,70 @@ function renderMatchups() {
     const hasGameweek = Boolean(currentGameweek);
     const matches = Array.isArray(currentMatches) ? currentMatches : [];
     const bye = currentGameweekBye;
+    const matchStatusOf = match => String(match.status || "PENDING").trim().toUpperCase();
+    const isLiveStatus = status => ["LIVE", "IN_PROGRESS", "IN PROGRESS"].includes(status);
+    const liveMatches = matches.filter(match => isLiveStatus(matchStatusOf(match)));
+    const completedMatches = matches.filter(match => matchStatusOf(match) === "COMPLETED");
+    const upcomingMatches = matches.filter(match =>
+        !isLiveStatus(matchStatusOf(match)) && matchStatusOf(match) !== "COMPLETED"
+    );
+    const gameweekStatus = String(currentGameweek?.status || "").trim().toUpperCase();
+    const allMatchesCompleted = matches.length > 0 && completedMatches.length === matches.length;
+    const roundStatus = !hasGameweek || !matchesLoadedFromDatabase
+        ? "UNAVAILABLE"
+        : gameweekStatus === "COMPLETED" || gameweekStatus === "FINISHED" || allMatchesCompleted
+            ? "COMPLETED"
+            : isLiveStatus(gameweekStatus) || liveMatches.length > 0
+                ? "LIVE"
+                : "UPCOMING";
 
     const kicker = document.getElementById("matchupsKicker");
     const title = document.getElementById("matchupsTitle");
     const summary = document.getElementById("matchupSummary");
     const legend = document.getElementById("matchupsLegendNote");
+    const setMatchupsText = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    };
+
+    const participantIds = new Set();
+    matches.forEach(match => {
+        [match.player_a_id, match.player_b_id].forEach(playerId => {
+            if (playerId !== null && playerId !== undefined) {
+                participantIds.add(String(playerId));
+            }
+        });
+    });
+    if (bye?.player_id !== null && bye?.player_id !== undefined) {
+        participantIds.add(String(bye.player_id));
+    }
+
+    const phaseElement = document.getElementById("matchupsHeroStatus");
+    if (phaseElement) {
+        phaseElement.textContent = roundStatus;
+        phaseElement.classList.remove(
+            "phase-unavailable",
+            "phase-upcoming",
+            "phase-live",
+            "phase-completed"
+        );
+        phaseElement.classList.add(`phase-${roundStatus.toLowerCase()}`);
+    }
+    setMatchupsText("matchupsHeroFixtures", matchesLoadedFromDatabase ? String(matches.length) : "—");
+    setMatchupsText("matchupsHeroPlayers", matchesLoadedFromDatabase ? String(participantIds.size) : "—");
+    setMatchupsText(
+        "matchupsHeroBye",
+        !matchesLoadedFromDatabase ? "—" : bye ? bye.player?.name || "UNRESOLVED" : "NONE"
+    );
 
     if (kicker) {
         kicker.textContent = hasGameweek
-            ? `Pairings // ${gwLabel}`
-            : "Pairings // Current Gameweek";
+            ? `Current Round // ${gwLabel}`
+            : "Current Round // Unavailable";
     }
 
     if (title) {
-        title.textContent = hasGameweek
-            ? `${gwLabel} — MATCHUPS`
-            : "CURRENT GAMEWEEK — MATCHUPS";
+        title.textContent = "MATCH CENTER";
     }
 
     if (summary) {
@@ -1200,20 +1325,18 @@ function renderMatchups() {
             summary.textContent = "Current fixtures are unavailable.";
         } else {
             const fixtureText = `${matches.length} ${matches.length === 1 ? "fixture" : "fixtures"}`;
+            const playerText = `${participantIds.size} ${participantIds.size === 1 ? "player" : "players"}`;
             const byeText = bye && bye.player
                 ? ` • ${bye.player.name} on bye`
                 : "";
-            summary.textContent = `${gwLabel}: ${fixtureText}${byeText}`;
+            summary.textContent = `${gwLabel}: ${fixtureText} • ${playerText}${byeText}`;
         }
     }
 
     if (legend) {
-        const gwStatus = String(currentGameweek?.status || "").toUpperCase();
-        legend.textContent = !hasGameweek
-            ? "Fixtures — unavailable"
-            : gwStatus === "COMPLETED"
-                ? `${gwLabel} results verified`
-                : `${gwLabel} fixtures — awaiting results`;
+        legend.textContent = roundStatus === "UNAVAILABLE"
+            ? "Fixture data unavailable"
+            : `${gwLabel} · ${roundStatus.toLowerCase()}`;
     }
 
     const headingA = groupA?.parentElement?.querySelector(".grp-header");
@@ -1264,9 +1387,25 @@ function renderMatchups() {
         } else if (matches.length === 0) {
             groupA.innerHTML = `<div class="group-message">No fixtures are registered for ${escapeHTML(gwLabel)}.</div>`;
         } else {
-            groupA.innerHTML = matches.map(match =>
-                renderMatchCard(match, matchNumbers.get(String(match.id)), "sd")
-            ).join("");
+            const matchSections = [
+                { key: "live", title: "LIVE MATCHES", matches: liveMatches },
+                { key: "upcoming", title: "UPCOMING MATCHES", matches: upcomingMatches },
+                { key: "completed", title: "COMPLETED MATCHES", matches: completedMatches }
+            ].filter(section => section.matches.length > 0);
+
+            groupA.innerHTML = matchSections.map(section => `
+                <section class="match-status-section match-status-section--${section.key}" aria-label="${section.title}">
+                    <header class="match-status-heading">
+                        <h3>${section.title}</h3>
+                        <span>${section.matches.length} ${section.matches.length === 1 ? "FIXTURE" : "FIXTURES"}</span>
+                    </header>
+                    <div class="match-status-grid">
+                        ${section.matches.map(match =>
+                            renderMatchCard(match, matchNumbers.get(String(match.id)), "sd")
+                        ).join("")}
+                    </div>
+                </section>
+            `).join("");
         }
         groupA.removeAttribute("aria-busy");
     }
@@ -1394,7 +1533,8 @@ function applyLiveScores() {
                 badge = document.createElement("span");
                 badge.className = "match-badge live-provisional";
                 badge.textContent = "LIVE · PROVISIONAL";
-                head.appendChild(badge);
+                const badgeContainer = head.querySelector(".match-card-meta") || head;
+                badgeContainer.appendChild(badge);
             }
         } else if (!cardHasLive && badge) {
             badge.remove();
