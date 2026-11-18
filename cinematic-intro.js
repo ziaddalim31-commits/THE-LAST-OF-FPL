@@ -5,11 +5,32 @@
 
     const storageKey = "tlofpl-cinematic-intro-seen";
 
+    const cleanupIntro = () => {
+        if (!intro.isConnected) return;
+        intro.remove();
+        document.querySelector(".nav-btn")?.focus();
+    };
+
     const finishIntro = () => {
         if (!intro.isConnected) return;
         document.body.classList.remove("intro-pending");
         document.body.classList.add("intro-complete");
         intro.classList.add("is-leaving");
+
+        const handleAnimationEnd = (event) => {
+            if (event.target === intro && intro.classList.contains("is-leaving")) {
+                intro.removeEventListener("animationend", handleAnimationEnd);
+                cleanupIntro();
+            }
+        };
+        intro.addEventListener("animationend", handleAnimationEnd);
+
+        setTimeout(() => {
+            if (intro.isConnected && intro.classList.contains("is-leaving")) {
+                intro.removeEventListener("animationend", handleAnimationEnd);
+                cleanupIntro();
+            }
+        }, 1200);
     };
 
     window.enterTournament = () => {
@@ -20,13 +41,6 @@
         }
         finishIntro();
     };
-
-    intro.addEventListener("animationend", event => {
-        if (event.target === intro && intro.classList.contains("is-leaving")) {
-            intro.remove();
-            document.querySelector(".nav-btn")?.focus();
-        }
-    });
 
     let alreadySeen = false;
     try {
