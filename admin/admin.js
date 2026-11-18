@@ -18,6 +18,7 @@ const message = document.getElementById("message");
 const adminEmail = document.getElementById("admin-email");
 
 const adminData = document.getElementById("admin-data");
+let initialResultsPreviewAttempted = false;
 
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -96,6 +97,11 @@ async function verifyAdmin() {
 showDashboard(sessionData.session.user);
 
 await loadAdminData(sessionData.session.access_token);
+
+if (!initialResultsPreviewAttempted) {
+  initialResultsPreviewAttempted = true;
+  await loadInitialResultsPreview(sessionData.session.access_token);
+}
 
 return true;
 }
@@ -209,6 +215,40 @@ function renderGameweekPreview(preview, previewToken) {
   `;
 }
 
+async function loadInitialResultsPreview(accessToken) {
+  if (!previewButton || !previewPanel || !accessToken) return;
+
+  previewButton.disabled = true;
+  previewButton.textContent = "AUTOMATICALLY CHECKING FPL...";
+  previewPanel.textContent = "Checking whether the current gameweek is final and preparing a read-only results preview...";
+
+  try {
+    const response = await fetch("/api/admin/preview", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      const detail = typeof result.detail === "string"
+        ? result.detail
+        : result.detail && typeof result.detail === "object"
+          ? JSON.stringify(result.detail)
+          : "";
+      throw new Error(detail || result.error || "AUTOMATIC_PREVIEW_NOT_READY");
+    }
+
+    renderGameweekPreview(result.preview, result.preview_token);
+    setupConfirmResultsButton();
+    showMessage("AUTOMATIC CHECK COMPLETE — RESULTS ARE READY FOR YOUR REVIEW.", true);
+  } catch (error) {
+    previewPanel.textContent = `AUTOMATIC CHECK: ${error.message}. You can retry with the Generate Results Preview button. No database changes were made.`;
+  } finally {
+    previewButton.disabled = false;
+    previewButton.textContent = "GENERATE RESULTS PREVIEW";
+  }
+}
+
 if (previewButton) {
   previewButton.addEventListener("click", async () => {
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -281,7 +321,7 @@ function renderGw11FixturePreview(result) {
 
   gw11FixturePanel.innerHTML = `
     <h3>GW${escapeHTML(result.gameweek.gw_number)} — FIXTURE PREVIEW</h3>
-    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through}</p>
+    <p>Roster source: ${escapeHTML(result.roster_source)} · Previous opponents checked through GW${result.history_checked_through} · Verified chapter opponent history through GW${result.history_integrity_checked_through} (${result.opponent_history_integrity.rounds_checked} rounds)</p>
     <p>Active players: ${preview.active_players} · Matches: ${preview.matches_count} · Repeated matchups: ${preview.rematches}</p>
     <p>SAFE: ${preview.status_counts.SAFE} · NORMAL: ${preview.status_counts.NORMAL} · DANGER: ${preview.status_counts.DANGER} · INFECTED: ${preview.infected_count}</p>
     ${preview.infected_count ? `<p><strong>INFECTED SURVIVORS:</strong> ${preview.infected_players.map(player => escapeHTML(player.name)).join(", ")}</p>` : ""}
@@ -460,6 +500,12 @@ async function setupConfirmResultsButton() {
       await loadAdminData(accessToken).catch(error => {
         showMessage(`RESULTS ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
       });
+
+      try {
+        await requestNextGameweekFixturePreview(accessToken);
+      } catch (error) {
+        gw11FixturePanel.textContent = `RESULTS WERE SAVED. NEXT FIXTURE PREVIEW IS NOT READY YET: ${error.message}`;
+      }
     } catch (error) {
       button.disabled = false;
       button.textContent = "CONFIRM AND SAVE RESULTS";
@@ -472,22 +518,38 @@ async function setupSaveGw11FixturesButton() {
   const button = document.getElementById("save-gw11-fixtures-button");
   if (!button || !lastGw11FixturePreview) return;
 
+  let saveInProgress = false;
+
   button.addEventListener("click", async () => {
-    if (!window.confirm(`Save these exact GW${lastGw11FixturePreview.gameweek.gw_number} fixtures and the displayed bye to Supabase?`)) return;
+    if (saveInProgress || !lastGw11FixturePreview) return;
 
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
-    if (!accessToken) {
-      showMessage("SESSION EXPIRED — Please authenticate again.");
-      showLogin();
-      return;
-    }
+    const approvedPreview = lastGw11FixturePreview;
+    const targetGameweek = approvedPreview.gameweek.gw_number;
+    const preview = approvedPreview.preview;
 
+    if (!window.confirm(`Save these exact GW${targetGameweek} fixtures and the displayed bye to Supabase?`)) return;
+
+    saveInProgress = true;
     button.disabled = true;
     button.textContent = "SAVING APPROVED FIXTURES...";
-    const targetGameweek = lastGw11FixturePreview.gameweek.gw_number;
-    const preview = lastGw11FixturePreview.preview;
+
+    const controller = new AbortController();
+    let requestStarted = false;
+    let saved = false;
+    let saveOutcomeUnknown = false;
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+
     try {
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError) throw new Error(`SESSION_CHECK_FAILED: ${sessionError.message}`);
+
+      const accessToken = sessionData && sessionData.session && sessionData.session.access_token;
+      if (!accessToken) {
+        showLogin();
+        throw new Error("SESSION_EXPIRED — Please authenticate again.");
+      }
+
+      requestStarted = true;
       const response = await fetch("/api/admin/fixtures-save", {
         method: "POST",
         headers: {
@@ -497,28 +559,71 @@ async function setupSaveGw11FixturesButton() {
         body: JSON.stringify({
           fixtures: preview.matches,
           bye_player_id: preview.bye ? preview.bye.player_id : null
-        })
+        }),
+        signal: controller.signal
       });
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.detail || result.error || "FIXTURE_SAVE_FAILED");
+
+      const result = await response.json().catch(() => null);
+      if (!result) {
+        saveOutcomeUnknown = response.ok;
+        throw new Error(response.ok ? "SAVE_RESPONSE_UNREADABLE" : `HTTP_${response.status}`);
       }
 
-      const savedGameweek = targetGameweek;
+      if (!response.ok || !result.success) {
+        const detail = result.detail || result.error || "FIXTURE_SAVE_FAILED";
+
+        if (result.error === "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED") {
+          lastGw11FixturePreview = null;
+          button.textContent = "REGENERATE AFTER PREVIOUS RESULTS";
+          const note = document.createElement("p");
+          note.textContent = `${detail} The old preview is no longer valid; confirm the previous gameweek, then generate a fresh fixture preview.`;
+          gw11FixturePanel.appendChild(note);
+        }
+
+        throw new Error(detail);
+      }
+
+      if (Number(result.gameweek && result.gameweek.gw_number) !== Number(targetGameweek)) {
+        saveOutcomeUnknown = true;
+        throw new Error("SERVER_GAMEWEEK_MISMATCH — verify saved fixtures before taking another action.");
+      }
+
+      saved = true;
       lastGw11FixturePreview = null;
       gw11FixturePanel.innerHTML = `
-        <h3>GW${escapeHTML(savedGameweek)} — FIXTURES SAVED</h3>
-        <p>${escapeHTML(result.saved.matches_created)} fixtures saved successfully.</p>
+        <h3>GW${escapeHTML(targetGameweek)} — FIXTURES SAVED</h3>
+        <p>${escapeHTML(result.saved && result.saved.matches_created)} fixtures saved successfully.</p>
         <p>Bye: ${preview.bye ? escapeHTML(preview.bye.name) : "None"}</p>
       `;
-      showMessage(`GW${savedGameweek} FIXTURES SAVED.`, true);
+      showMessage(`GW${targetGameweek} FIXTURES SAVED.`, true);
       await loadAdminData(accessToken).catch(error => {
-        showMessage(`GW${savedGameweek} FIXTURES ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
+        showMessage(`GW${targetGameweek} FIXTURES ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
       });
     } catch (error) {
-      button.disabled = false;
-      button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
-      showMessage(`FIXTURES NOT SAVED: ${error.message}`);
+      const uncertain = requestStarted && (
+        saveOutcomeUnknown ||
+        error.name === "AbortError" ||
+        error instanceof TypeError
+      );
+
+      if (uncertain) {
+        saveOutcomeUnknown = true;
+        button.disabled = true;
+        button.textContent = "SAVE STATUS UNKNOWN — REFRESH TO VERIFY";
+        showMessage("SAVE RESULT UNKNOWN — the request may have reached the server. Refresh the admin page and check the target gameweek's fixtures before retrying.");
+      } else {
+        button.disabled = false;
+        if (lastGw11FixturePreview) {
+          button.textContent = `SAVE APPROVED GW${targetGameweek} FIXTURES`;
+        }
+        showMessage(`FIXTURES NOT SAVED: ${error.message}`);
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
+      saveInProgress = false;
+      if (!saved && !saveOutcomeUnknown && lastGw11FixturePreview) {
+        button.disabled = false;
+      }
     }
   });
 }
@@ -563,8 +668,8 @@ function renderRoundHistory(data) {
 
   panel.innerHTML = `
     <p><strong>${data.totals.completed_gameweeks} completed gameweeks · ${data.totals.completed_matches} matches · ${data.totals.history_rows} survivor history records</strong></p>
-    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history
-      ? `<p class="workflow-warning">DATA GAPS: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no stored match results; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots. Historical values are not fabricated.</p>`
+    ${data.totals.gameweeks_missing_matches || data.totals.gameweeks_missing_survivor_history || data.totals.gameweeks_opponent_history_failed || data.totals.gameweeks_snapshot_integrity_failed
+      ? `<p class="workflow-warning">DATA INTEGRITY WARNING: ${data.totals.gameweeks_missing_matches || 0} completed gameweeks have no match rows; ${data.totals.gameweeks_missing_survivor_history || 0} have no survivor snapshots; ${data.totals.gameweeks_opponent_history_failed || 0} fail the chapter opponent-history audit; ${data.totals.gameweeks_snapshot_integrity_failed || 0} have incomplete snapshot coverage. Snapshot gaps are diagnostic only and do not block rematch checks.</p>`
       : ""}
     ${data.gameweeks.map(gameweek => {
       const matchRows = gameweek.matches.length
@@ -594,6 +699,12 @@ function renderRoundHistory(data) {
         <article class="history-round">
           <h3>GW${escapeHTML(gameweek.gw_number)} — ${escapeHTML(gameweek.chapter)}</h3>
           <p class="workflow-note">BYE: ${byeNames}</p>
+          ${gameweek.data_quality && !gameweek.data_quality.opponent_history_ok
+            ? `<p class="workflow-warning">OPPONENT HISTORY AUDIT FAILED: ${escapeHTML(gameweek.data_quality.opponent_history_error && gameweek.data_quality.opponent_history_error.code || "UNKNOWN")}.</p>`
+            : `<p class="workflow-note">CHAPTER OPPONENT HISTORY: ${gameweek.data_quality && gameweek.data_quality.opponent_history_ok ? "VERIFIED" : "NOT VERIFIED"}</p>`}
+          ${gameweek.data_quality && !gameweek.data_quality.snapshot_integrity_ok
+            ? `<p class="workflow-warning">SURVIVOR SNAPSHOTS: ${escapeHTML(gameweek.data_quality.snapshot_integrity_error && gameweek.data_quality.snapshot_integrity_error.code || "INCOMPLETE")} — diagnostic only; not used to determine previous opponents.</p>`
+            : `<p class="workflow-note">SURVIVOR SNAPSHOTS: ${gameweek.data_quality && gameweek.data_quality.snapshot_integrity_ok ? "COMPLETE" : "NOT VERIFIED"}</p>`}
           <h4>Match Results</h4>
           <div class="table-scroll"><table><thead><tr><th>Player A</th><th>Score</th><th>Player B</th><th>Winner</th></tr></thead><tbody>${matchRows}</tbody></table></div>
           <h4>Survivor Changes</h4>

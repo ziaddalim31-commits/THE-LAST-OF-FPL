@@ -1,6 +1,8 @@
 "use strict";
 
 const { generateFixtures, pairKey, filterPreviousMatchesToChapter } = require("../_lib/fixture-generator");
+const { selectNextFixtureGameweek, isPreviousGameweekConfirmed } = require("../_lib/next-gameweek");
+const { auditChapterMatchHistory } = require("../_lib/chapter-history");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -70,14 +72,27 @@ module.exports = async function handler(req, res) {
         const [players, gameweeks, allMatches, allByes] = await Promise.all([
             db("players?select=id,name,status,hearts,is_infected,is_active&order=id.asc"),
             db("gameweeks?select=id,gw_number,chapter,status&order=gw_number.asc"),
-            db("matches?select=id,gameweek_id,player_a_id,player_b_id,status&order=id.asc"),
+            db("matches?select=id,gameweek_id,player_a_id,player_b_id,points_a,points_b,winner_id,winner_method,status&order=id.asc"),
             db("gameweek_byes?select=id,gameweek_id,player_id")
         ]);
 
-        const gameweek = gameweeks
+        const pendingGameweeks = gameweeks
             .filter(row => String(row.status || "").trim().toUpperCase() === "PENDING")
-            .sort((a, b) => Number(a.gw_number) - Number(b.gw_number))[0];
-        if (!gameweek) return send(res, 404, { error: "PENDING_GAMEWEEK_NOT_FOUND" });
+            .sort((a, b) => Number(a.gw_number) - Number(b.gw_number));
+        const gameweek = selectNextFixtureGameweek(gameweeks, allMatches, allByes);
+        if (!gameweek) {
+            return send(res, 409, {
+                error: pendingGameweeks.length
+                    ? "NEXT_GAMEWEEK_FIXTURE_TARGET_NOT_AVAILABLE"
+                    : "PENDING_GAMEWEEK_NOT_FOUND",
+                pending_gameweeks: pendingGameweeks.map(row => ({
+                    gw_number: row.gw_number,
+                    status: row.status,
+                    has_fixtures: allMatches.some(match => String(match.gameweek_id) === String(row.id)) ||
+                        allByes.some(bye => String(bye.gameweek_id) === String(row.id))
+                }))
+            });
+        }
 
         const currentGw = Number(gameweek.gw_number);
         if (!Number.isInteger(currentGw) || currentGw < 2 || currentGw > 38) {
@@ -88,11 +103,26 @@ module.exports = async function handler(req, res) {
         if (!previousGameweek) {
             return send(res, 404, { error: "PREVIOUS_GAMEWEEK_NOT_FOUND", previous_gw: currentGw - 1 });
         }
-        if (String(previousGameweek.status || "").toUpperCase() !== "COMPLETED") {
+        if (!isPreviousGameweekConfirmed(gameweeks, gameweek)) {
             return send(res, 409, {
                 error: "PREVIOUS_GAMEWEEK_MUST_BE_CONFIRMED",
-                previous_gw: currentGw - 1,
-                status: previousGameweek.status
+                previous_gw: previousGameweek.gw_number,
+                status: previousGameweek.status,
+                detail: `GW${previousGameweek.gw_number} must be confirmed before GW${currentGw} fixtures can be saved. Generate a fresh fixture preview after confirming the previous round.`
+            });
+        }
+
+        const historyAudit = auditChapterMatchHistory({
+            gameweeks, matches: allMatches, byes: allByes, players,
+            currentGameweek: gameweek,
+            throughGameweek: currentGw - 1,
+            requiredPlayerIds: players.filter(player => player.is_active !== false && Number(player.hearts) > 0).map(player => player.id)
+        });
+        if (!historyAudit.ok) {
+            return send(res, 409, {
+                error: "CHAPTER_OPPONENT_HISTORY_FAILED",
+                detail: `${historyAudit.code} at GW${historyAudit.gameweek || currentGw - 1}. Fixtures were not saved.`,
+                audit: historyAudit
             });
         }
 
@@ -114,7 +144,8 @@ module.exports = async function handler(req, res) {
 
         const submittedPairs = normalizedPairSet(body.fixtures);
         const generatedPairs = normalizedPairSet(generated.matches);
-        if (submittedPairs.size !== generatedPairs.size ||
+        if (body.fixtures.length !== generated.matches.length ||
+            submittedPairs.size !== generatedPairs.size ||
             [...generatedPairs].some(pair => !submittedPairs.has(pair))) {
             return send(res, 409, {
                 error: "FIXTURE_PREVIEW_MISMATCH",
