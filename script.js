@@ -2322,9 +2322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     initTeamLineupViewer();
     startLiveScores();
 
-    document.body.classList.remove("intro-pending");
-    document.body.classList.add("intro-complete");
-
     publishDebugState();
 
     console.log("THE LAST OF FPL: initialization finished.", {
