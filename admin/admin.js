@@ -492,14 +492,33 @@ async function setupConfirmResultsButton() {
       }
 
       lastPreviewToken = null;
+      const fixtures = result.fixtures || {};
+      let fixtureNote;
+      let fixtureOk = true;
+      if (fixtures.status === "SAVED") {
+        fixtureNote = `Next gameweek (GW${fixtures.gameweek ? fixtures.gameweek.gw_number : "?"}) fixtures were auto-generated and saved (${fixtures.matches_created} matches).`;
+      } else if (fixtures.status === "ALREADY_SAVED") {
+        fixtureNote = `Next gameweek fixtures were already saved (${fixtures.matches_created} matches).`;
+      } else if (fixtures.status === "SKIPPED") {
+        fixtureNote = "No next gameweek to populate — the chapter is complete.";
+      } else {
+        fixtureOk = false;
+        fixtureNote = `Results ARE confirmed, but next-gameweek fixture generation needs a retry (${fixtures.code || "FIXTURE_SAVE_FAILED"}). Use the fixture preview/save controls below.`;
+      }
+
       previewPanel.innerHTML = `
         <h3>GW${escapeHTML(result.gameweek.gw_number)} — RESULTS CONFIRMED</h3>
         <p>${escapeHTML(result.confirmation.matches_completed)} matches completed · ${escapeHTML(result.confirmation.players_updated)} survivors updated · ${escapeHTML(result.confirmation.history_rows_created)} history records created.</p>
+        <p>${escapeHTML(fixtureNote)}</p>
       `;
       showMessage("RESULTS CONFIRMED AND SAVED.", true);
       await loadAdminData(accessToken).catch(error => {
         showMessage(`RESULTS ARE SAVED, BUT THE DASHBOARD REFRESH FAILED: ${error.message}`);
       });
+
+      if (!fixtureOk || fixtures.status === "SKIPPED") {
+        return;
+      }
 
       try {
         await requestNextGameweekFixturePreview(accessToken);

@@ -4,6 +4,7 @@ const { createHash, timingSafeEqual } = require("crypto");
 const liveHandler = require("../live");
 const { invokeLiveHandler } = require("../_lib/invoke-live-handler");
 const { buildGameweekPreview } = require("../_lib/tournament-engine");
+const { saveNextGameweekFixtures } = require("../_lib/fixture-save-service");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -23,6 +24,26 @@ async function db(path) {
     const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error("DATABASE_READ_FAILED");
     return data;
+}
+
+async function saveFixtures({ gameweekId, fixtures, byePlayerId }) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/save_gameweek_fixtures`, {
+        method: "POST",
+        headers: {
+            apikey: SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            p_gameweek_id: gameweekId,
+            p_fixtures: fixtures,
+            p_bye_player_id: byePlayerId
+        })
+    });
+    const data = await response.json().catch(() => null);
+    if (response.ok) return { ok: true, data };
+    const message = String(data && (data.message || data.details) || "");
+    return { ok: false, message, code: /ALREADY_EXIST/i.test(message) ? "FIXTURES_ALREADY_EXIST" : undefined };
 }
 
 async function requireAdmin(token) {
@@ -140,10 +161,45 @@ module.exports = async function handler(req, res) {
             return send(res, 500, { error: "CONFIRMATION_FAILED" });
         }
 
+        // Results are now committed. Best-effort: generate AND save the next
+        // gameweek's fixtures. A fixture failure must never mask a successful
+        // confirmation — it is reported as a retryable follow-up instead.
+        let fixtures;
+        try {
+            const fixtureResult = await saveNextGameweekFixtures({ db, saveFixtures });
+            if (fixtureResult.ok) {
+                fixtures = {
+                    status: fixtureResult.status === "ALREADY_SAVED" ? "ALREADY_SAVED" : "SAVED",
+                    gameweek: fixtureResult.gameweek,
+                    matches_created: fixtureResult.matches_created,
+                    bye_player_id: fixtureResult.bye_player_id === undefined ? null : fixtureResult.bye_player_id
+                };
+                if (fixtureResult.status === "NO_PENDING_GAMEWEEK") {
+                    fixtures = { status: "SKIPPED", reason: "NO_PENDING_GAMEWEEK" };
+                }
+            } else {
+                fixtures = {
+                    status: "NEEDS_RETRY",
+                    code: fixtureResult.code,
+                    detail: fixtureResult.detail,
+                    gameweek: fixtureResult.gameweek || null,
+                    bye_candidates: fixtureResult.bye_candidates
+                };
+            }
+        } catch (fixtureError) {
+            console.error("Automatic next-gameweek fixture save failed:", fixtureError);
+            fixtures = {
+                status: "NEEDS_RETRY",
+                code: "FIXTURE_SAVE_FAILED",
+                detail: String(fixtureError && fixtureError.message || "FIXTURE_SAVE_FAILED")
+            };
+        }
+
         return send(res, 200, {
             success: true,
             confirmation: rpcData,
-            gameweek: { id: gameweek.id, gw_number: gameweek.gw_number }
+            gameweek: { id: gameweek.id, gw_number: gameweek.gw_number },
+            fixtures
         });
     } catch (error) {
         const message = String(error && error.message || "CONFIRMATION_FAILED");
